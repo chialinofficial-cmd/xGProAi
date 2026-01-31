@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  /* Premium Dark Base */
+  --background: #050505;
+  --foreground: #ededed;
+  
+  /* Gold Palette */
+  --gold-primary: #D4AF37;
+  --gold-light: #F4C430;
+  --gold-dark: #AA8C2C;
+  --gold-glow: rgba(212, 175, 55, 0.3);
+
+  /* Surface Colors */
+  --surface-start: #0a0a0a;
+  --surface-end: #121212;
+  --surface-card: #141414;
+  --border-subtle: #2a2a2a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-gold: var(--gold-primary);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dark: var(--gold-dark);
+  --color-surface-card: var(--surface-card);
+  --color-border-subtle: var(--border-subtle);
+  
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Utilities for Gold Effects */
+.text-gradient-gold {
+  background: linear-gradient(to right, #D4AF37, #F4C430, #D4AF37);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 200% auto;
+  animation: shine 4s linear infinite;
+}
+
+.border-gold-glow {
+  border: 1px solid var(--gold-dark);
+  box-shadow: 0 0 15px var(--gold-glow);
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
