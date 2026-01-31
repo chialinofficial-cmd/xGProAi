@@ -7,3 +7,5 @@ passlib[bcrypt]
 python-jose[cryptography]
 openai
 requests
+pydantic[email]
+email-validator
