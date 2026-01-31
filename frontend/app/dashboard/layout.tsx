@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { usePayment } from '../hooks/usePayment';
-import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import PaymentSuccessToast from './components/PaymentSuccessToast';
 
 export default function DashboardLayout({
     children,
@@ -16,7 +17,6 @@ export default function DashboardLayout({
     const [credits, setCredits] = useState(0);
 
     // Fetch credits whenever the layout mounts or user changes
-    // We can also poll or listen to an event, but for now simple fetch is good
     useEffect(() => {
         if (!user) return;
 
@@ -38,37 +38,17 @@ export default function DashboardLayout({
 
         fetchCredits();
 
-        // Poll every 10 seconds to keep updated
         const interval = setInterval(fetchCredits, 10000);
         return () => clearInterval(interval);
     }, [user]);
 
-    // Handle Payment Success
-    const searchParams = useSearchParams();
-    const [showSuccess, setShowSuccess] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    useEffect(() => {
-        if (searchParams.get('payment') === 'success' || searchParams.get('mock_payment') === 'success') {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 5000); // Hide after 5s
-            // Remove params from URL without reload
-            window.history.replaceState({}, '', '/dashboard');
-        }
-    }, [searchParams]);
 
     return (
         <div className="flex h-screen bg-[#0f1115] overflow-hidden text-foreground font-sans">
-            {/* Success Toast */}
-            {showSuccess && (
-                <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <span className="text-2xl">🎉</span>
-                    <div>
-                        <h4 className="font-bold">Upgrade Successful!</h4>
-                        <p className="text-sm">You are now a Gold Pro member.</p>
-                    </div>
-                </div>
-            )}
+            <Suspense fallback={null}>
+                <PaymentSuccessToast />
+            </Suspense>
 
             {/* Sidebar Overlay (Mobile) */}
             {isMobileMenuOpen && (
