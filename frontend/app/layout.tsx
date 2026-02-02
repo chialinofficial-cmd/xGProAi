@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "xGProAi | Institutional Gold Analysis",
   description: "AI-powered XAU/USD technical analysis for professional traders. Spot liquidity grabs, market structure, and bias instantly.",
+  other: {
+    "cryptomus": "77b493d5",
+  },
 };
 
 import { AuthProvider } from "./context/AuthContext";
