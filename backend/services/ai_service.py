@@ -140,6 +140,72 @@ class AIService:
                         
                         return json_str
 
+                # 3. Post-Processing: Hallucination Check & Fix
+                # The model often hallucinates ~2000-2400 (historical Gold price) even when the chart shows 4000-5000+
+                # We use the y_axis_labels (which it usually OCRs correctly) to validate the Trade Levels.
+                
+                try:
+                    data = json.loads(json_str) if isinstance(json_str, str) else json_str
+                    
+                    y_labels = data.get("y_axis_labels", [])
+                    levels = data.get("levels", {})
+                    entry = levels.get("entry")
+                    
+                    # Convert strings to floats for math
+                    valid_labels = []
+                    for lbl in y_labels:
+                        try:
+                            valid_labels.append(float(str(lbl).replace(",", "")))
+                        except:
+                            pass
+                            
+                    if valid_labels and entry:
+                        avg_label = sum(valid_labels) / len(valid_labels)
+                        
+                        try:
+                            entry_float = float(str(entry).replace(",", ""))
+                            
+                            # CHECK: Is Entry wildly far from the visual labels? (e.g. > 1000 points difference)
+                            # This catches the 2040 vs 4940 error.
+                            if abs(entry_float - avg_label) > 1000:
+                                print(f"HALLUCINATION DETECTED: Entry {entry_float} vs AvgLabel {avg_label}")
+                                
+                                # FIX: We can't trust the specific levels, but we can trust the BIAS (Long/Short)
+                                # and the RELATIVE distance.
+                                # Strategy: Re-center the trade around the Average Label.
+                                
+                                # Use the 'avg_label' as the rough current price.
+                                new_entry = avg_label
+                                
+                                # Determine direction based on TP/SL relation or Bias
+                                is_bullish = data.get("bias", "Neutral") == "Bullish"
+                                
+                                # Create standard scalping structure around the REAL price (Labels)
+                                if is_bullish:
+                                    levels["entry"] = round(new_entry, 2)
+                                    levels["sl"] = round(new_entry - 5.0, 2)   # -50 pips
+                                    levels["tp1"] = round(new_entry + 5.0, 2)  # +50 pips
+                                    levels["tp2"] = round(new_entry + 10.0, 2) # +100 pips
+                                else:
+                                    levels["entry"] = round(new_entry, 2)
+                                    levels["sl"] = round(new_entry + 5.0, 2)
+                                    levels["tp1"] = round(new_entry - 5.0, 2)
+                                    levels["tp2"] = round(new_entry - 10.0, 2)
+                                    
+                                data["levels"] = levels
+                                data["summary"] += " [SYSTEM NOTE: Prices auto-corrected based on Y-Axis OCR to fix AI hallucination.]"
+                                
+                                # Re-dump to string
+                                json_str = json.dumps(data)
+
+                        except Exception as e:
+                            print(f"Error during hallucination fix: {e}")
+                            
+                except Exception as parse_err:
+                    print(f"Post-processing parse warning: {parse_err}")
+
+                return json_str
+            
             except Exception as e:
                 print(f"Model {model} failed: {e}")
                 errors.append(f"{model}: {str(e)}")
