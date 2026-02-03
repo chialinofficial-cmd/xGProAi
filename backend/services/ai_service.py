@@ -107,6 +107,7 @@ class AIService:
                 # Robust JSON Cleaning & Repair
                 import re
                 import json
+                import ast
                 
                 # 1. Extract JSON block
                 json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
@@ -116,17 +117,28 @@ class AIService:
                 # Fix Markdown code blocks if missed by regex
                 json_str = json_str.replace("```json", "").replace("```", "").strip()
                 
-                # Fix Single Quotes (common in Python dicts but invalid JSON)
-                # We simply replace ' with " if it looks like a key/value wrapper
-                # Navigate carefully or just use a bulk replace for simplicity in this context
-                if "'" in json_str and '"' not in json_str: # high likelihood of python dict
-                     json_str = json_str.replace("'", '"')
-                
-                # Fix trailing commas
-                json_str = re.sub(r',\s*}', '}', json_str)
-                json_str = re.sub(r',\s*]', ']', json_str)
-
-                return json_str
+                try:
+                    # Attempt standard JSON parse
+                    json.loads(json_str)
+                    return json_str
+                except json.JSONDecodeError:
+                    # Fallback: Try parsing as Python dictionary (handles single quotes, etc.)
+                    try:
+                        # AST safely evaluates string as a python literal
+                        py_dict = ast.literal_eval(json_str)
+                        # If successful, dump back to valid JSON string
+                        return json.dumps(py_dict)
+                    except (ValueError, SyntaxError):
+                        # Last resort: Simple string replacements (trailing commas, etc)
+                         # Fix Single Quotes (common in Python dicts but invalid JSON)
+                        if "'" in json_str and '"' not in json_str: 
+                             json_str = json_str.replace("'", '"')
+                        
+                        # Fix trailing commas
+                        json_str = re.sub(r',\s*}', '}', json_str)
+                        json_str = re.sub(r',\s*]', ']', json_str)
+                        
+                        return json_str
 
             except Exception as e:
                 print(f"Model {model} failed: {e}")
