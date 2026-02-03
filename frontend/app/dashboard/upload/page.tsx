@@ -103,19 +103,22 @@ export default function UploadPage() {
                 }, 300);
             }, 1500);
 
-            // Add timeout
+            // Create a timeout controller to prevent hanging requests
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            // Extended timeout for AI processing (120 seconds) - Claude can take time!
+            const timeoutId = setTimeout(() => controller.abort(), 120000);
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
             const response = await fetch(`${apiUrl}/analyze`, {
-                method: "POST",
-                body: formData,
+                method: 'POST',
                 headers: {
-                    'X-User-ID': user.uid
+                    'X-User-ID': user.uid,
                 },
+                body: formData,
                 signal: controller.signal
-            }).finally(() => clearTimeout(timeoutId));
+            });
+
+            clearTimeout(timeoutId);
 
             // Clear intervals
             if (uploadInterval) clearInterval(uploadInterval);
@@ -145,7 +148,11 @@ export default function UploadPage() {
             console.error("Error:", error);
             // Don't alert if we just handled the limit reached
             if (!isLimitReached) {
-                alert(`Analysis failed: ${error.message}`);
+                if (error.name === 'AbortError') {
+                    alert("Analysis timed out. The AI is taking longer than expected. Please try again.");
+                } else {
+                    alert(`Analysis failed: ${error.message}`);
+                }
             }
             setIsUploading(false);
             setUploadProgress(0);
