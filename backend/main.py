@@ -16,7 +16,7 @@ from routers import payment
 # Create Tables on Startup
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="xGProAi Backend", version="1.0")
+app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 
 app.include_router(payment.router)
 
