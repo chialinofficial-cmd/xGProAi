@@ -98,8 +98,15 @@ class AIService:
                 
                 # If successful, extract and return
                 text_response = response.content[0].text
-                text_response = text_response.replace("```json", "").replace("```", "").strip()
-                return text_response
+                
+                # Robust JSON Cleaning
+                import re
+                json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
+                if json_match:
+                    return json_match.group(0)
+                else:
+                    # Fallback cleanup if regex doesn't match (unlikely for valid JSON)
+                    return text_response.replace("```json", "").replace("```", "").strip()
 
             except Exception as e:
                 print(f"Model {model} failed: {e}")
