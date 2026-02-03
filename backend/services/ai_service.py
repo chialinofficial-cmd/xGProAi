@@ -68,4 +68,13 @@ class AIService:
             
         except Exception as e:
             print(f"Error calling Gemini: {e}")
-            raise e
+            
+            # Debugging: List available models if this fails
+            try:
+                available_models = [m.name for m in genai.list_models()]
+                error_msg = f"Gemini Error: {e}. Available models: {available_models}"
+            except Exception as listing_error:
+                error_msg = f"Gemini Error: {e}. Could not list models: {listing_error}"
+            
+            # Raise a clean error that will be caught by main.py
+            raise Exception(error_msg)
