@@ -10,10 +10,16 @@ class AIService:
         self.api_key = os.getenv("ANTHROPIC_API_KEY")
         if self.api_key:
             self.client = anthropic.Anthropic(api_key=self.api_key)
-            self.model = "claude-3-5-sonnet-20241022"
+            # List of models to try in order of preference
+            self.models_to_try = [
+                "claude-3-5-sonnet-20240620",  # Latest Sonnet (Preferred)
+                "claude-3-opus-20240229",      # Opus (High quality)
+                "claude-3-sonnet-20240229",    # Legacy Sonnet (Stable)
+                "claude-3-haiku-20240307"      # Haiku (Fast/Fallback)
+            ]
         else:
             self.client = None
-            self.model = None
+            self.models_to_try = []
 
     def analyze_chart(self, image_path):
         if not self.client:
@@ -22,7 +28,7 @@ class AIService:
         # Read and encode image to base64
         with open(image_path, "rb") as image_file:
             image_data = base64.b64encode(image_file.read()).decode("utf-8")
-            media_type = "image/jpeg" # Default to jpeg, typically fine for most uploads
+            media_type = "image/jpeg" 
 
         system_prompt = """
         You are xGProAi, an elite XAU/USD (Gold) Scalper and Swing Trader with 20 years of institutional experience.
@@ -53,40 +59,47 @@ class AIService:
         Do not add Markdown formatting (like ```json), just raw JSON.
         """
 
-        try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1024,
-                system=system_prompt,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data,
+        last_error = None
+
+        # Try models in order
+        for model in self.models_to_try:
+            try:
+                print(f"Attempting analysis with model: {model}")
+                response = self.client.messages.create(
+                    model=model,
+                    max_tokens=1024,
+                    system=system_prompt,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": media_type,
+                                        "data": image_data,
+                                    },
                                 },
-                            },
-                            {
-                                "type": "text",
-                                "text": "Analyze this XAU/USD chart and provide a trading signal."
-                            }
-                        ],
-                    }
-                ],
-            )
-            
-            # Extract text response
-            text_response = response.content[0].text
-            
-            # Clean up markdown if Claude adds it
-            text_response = text_response.replace("```json", "").replace("```", "").strip()
-            
-            return text_response
-            
-        except Exception as e:
-            print(f"Error calling Claude: {e}")
-            raise Exception(f"Claude Error: {e}")
+                                {
+                                    "type": "text",
+                                    "text": "Analyze this XAU/USD chart and provide a trading signal."
+                                }
+                            ],
+                        }
+                    ],
+                )
+                
+                # If successful, extract and return
+                text_response = response.content[0].text
+                text_response = text_response.replace("```json", "").replace("```", "").strip()
+                return text_response
+
+            except Exception as e:
+                print(f"Model {model} failed: {e}")
+                last_error = e
+                # Continue to next model
+                continue
+        
+        # If all failed
+        raise Exception(f"All Claude models failed. Last error: {last_error}")
