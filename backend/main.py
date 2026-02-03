@@ -20,10 +20,12 @@ app = FastAPI(title="xGProAi Backend", version="1.0")
 
 app.include_router(payment.router)
 
-# Create uploads directory if it doesn't exist
-os.makedirs("uploads", exist_ok=True)
-
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Create uploads directory (ignore if fails, e.g. read-only file system)
+try:
+    os.makedirs("uploads", exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+except Exception as e:
+    print(f"Warning: Could not mount /uploads: {e}")
 
 # CORS Setup
 app.add_middleware(
@@ -159,8 +161,11 @@ def analyze_chart(
             raise HTTPException(status_code=403, detail="Daily credit limit reached (3/3). Upgrade to Pro.")
 
     # 1. Save File
-    file_location = f"uploads/{file.filename}"
-    os.makedirs("uploads", exist_ok=True)
+    # Use /tmp for Vercel Serverless compatibility
+    upload_dir = "/tmp"
+    os.makedirs(upload_dir, exist_ok=True)
+    file_location = f"{upload_dir}/{file.filename}"
+    
     with open(file_location, "wb+") as buffer:
         shutil.copyfileobj(file.file, buffer)
 

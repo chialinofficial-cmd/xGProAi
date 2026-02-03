@@ -108,7 +108,7 @@ export default function UploadPage() {
             // Extended timeout for AI processing (120 seconds) - Claude can take time!
             const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
             const response = await fetch(`${apiUrl}/analyze`, {
                 method: 'POST',
                 headers: {
