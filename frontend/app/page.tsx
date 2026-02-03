@@ -58,10 +58,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="xGProAi" className="w-8 h-8 rounded-lg" />
             <div className="text-xl font-bold tracking-tight">
               <span className="text-white">xG</span>
               <span className="text-gold">ProAi</span>
@@ -653,10 +651,8 @@ export default function Home() {
 
             {/* Brand Column */}
             <div className="col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
+              <div className="flex items-center gap-3 mb-4">
+                <img src="/logo.png" alt="xGProAi" className="w-8 h-8 rounded-lg" />
                 <span className="text-xl font-bold text-white">xGProAi</span>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs">

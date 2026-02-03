@@ -62,10 +62,8 @@ export default function SignupPage() {
 
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <Link href="/" className="inline-flex items-center gap-2">
-                        <svg className="w-10 h-10 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
+                    <Link href="/" className="inline-flex items-center gap-3">
+                        <img src="/logo.png" alt="xGProAi" className="w-12 h-12 rounded-xl" />
                         <span className="text-2xl font-bold tracking-tight text-white">xGProAi</span>
                     </Link>
                 </div>

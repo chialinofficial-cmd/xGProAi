@@ -66,10 +66,8 @@ export default function DashboardLayout({
             `}>
                 <div>
                     <div className="h-16 flex items-center justify-between px-6 border-b border-border-subtle/50">
-                        <Link href="/" className="flex items-center gap-2">
-                            <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
+                        <Link href="/" className="flex items-center gap-3">
+                            <img src="/logo.png" alt="xGProAi" className="w-8 h-8 rounded-lg" />
                             <span className="text-lg font-bold tracking-tight text-white">xGProAi</span>
                         </Link>
                         {/* Close Button (Mobile Only) */}
