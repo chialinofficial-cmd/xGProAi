@@ -21,8 +21,10 @@ export default function DashboardHome() {
 
         const fetchData = async () => {
             try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
                 // Fetch Stats
-                const statsRes = await fetch('http://localhost:8000/stats', {
+                const statsRes = await fetch(`${apiUrl}/stats`, {
                     headers: { 'X-User-ID': user.uid }
                 });
                 if (statsRes.ok) {
@@ -31,7 +33,7 @@ export default function DashboardHome() {
                 }
 
                 // Fetch Recent Activity
-                const activityRes = await fetch('http://localhost:8000/analyses?limit=5', {
+                const activityRes = await fetch(`${apiUrl}/analyses?limit=5`, {
                     headers: { 'X-User-ID': user.uid }
                 });
                 if (activityRes.ok) {

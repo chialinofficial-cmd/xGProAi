@@ -1,6 +1,7 @@
 import os
 import base64
 import anthropic
+import mimetypes
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,10 +13,11 @@ class AIService:
             self.client = anthropic.Anthropic(api_key=self.api_key)
             # List of models to try in order of preference
             self.models_to_try = [
-                "claude-3-5-sonnet-20240620",  # Latest Sonnet (Preferred)
-                "claude-3-opus-20240229",      # Opus (High quality)
-                "claude-3-sonnet-20240229",    # Legacy Sonnet (Stable)
-                "claude-3-haiku-20240307"      # Haiku (Fast/Fallback)
+                "claude-3-5-sonnet-20241022",  # Latest Sonnet
+                "claude-3-5-sonnet-20240620",  # Previous Sonnet
+                "claude-3-opus-20240229",      # Opus
+                "claude-3-sonnet-20240229",    # Legacy Sonnet
+                "claude-3-haiku-20240307"      # Haiku
             ]
         else:
             self.client = None
@@ -25,10 +27,14 @@ class AIService:
         if not self.client:
             raise ValueError("ANTHROPIC_API_KEY is not set. Please add it to your .env file.")
 
+        # Determine media type dynamically
+        mime_type, _ = mimetypes.guess_type(image_path)
+        if not mime_type or mime_type not in ["image/jpeg", "image/png", "image/webp"]:
+            mime_type = "image/jpeg" # Fallback
+
         # Read and encode image to base64
         with open(image_path, "rb") as image_file:
             image_data = base64.b64encode(image_file.read()).decode("utf-8")
-            media_type = "image/jpeg" 
 
         system_prompt = """
         You are xGProAi, an elite XAU/USD (Gold) Scalper and Swing Trader with 20 years of institutional experience.
@@ -59,7 +65,7 @@ class AIService:
         Do not add Markdown formatting (like ```json), just raw JSON.
         """
 
-        last_error = None
+        errors = []
 
         # Try models in order
         for model in self.models_to_try:
@@ -77,7 +83,7 @@ class AIService:
                                     "type": "image",
                                     "source": {
                                         "type": "base64",
-                                        "media_type": media_type,
+                                        "media_type": mime_type,
                                         "data": image_data,
                                     },
                                 },
@@ -97,9 +103,10 @@ class AIService:
 
             except Exception as e:
                 print(f"Model {model} failed: {e}")
-                last_error = e
+                errors.append(f"{model}: {str(e)}")
                 # Continue to next model
                 continue
         
         # If all failed
-        raise Exception(f"All Claude models failed. Last error: {last_error}")
+        error_summary = "; ".join(errors)
+        raise Exception(f"All Claude models failed. Errors: {error_summary}")
