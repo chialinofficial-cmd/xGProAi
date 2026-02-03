@@ -63,8 +63,7 @@ export default function SignupPage() {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <Link href="/" className="inline-flex items-center gap-3">
-                        <img src="/logo.png" alt="xGProAi" className="w-12 h-12 rounded-xl" />
-                        <span className="text-2xl font-bold tracking-tight text-white">xGProAi</span>
+                        <img src="/logo.png" alt="xGProAi" className="w-32 h-auto rounded-xl" />
                     </Link>
                 </div>
 

@@ -59,11 +59,7 @@ export default function Home() {
 
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="xGProAi" className="w-8 h-8 rounded-lg" />
-            <div className="text-xl font-bold tracking-tight">
-              <span className="text-white">xG</span>
-              <span className="text-gold">ProAi</span>
-            </div>
+            <img src="/logo.png" alt="xGProAi" className="w-24 h-auto rounded-lg" />
           </div>
 
           {/* Centered Links (Desktop) */}
@@ -652,8 +648,7 @@ export default function Home() {
             {/* Brand Column */}
             <div className="col-span-2">
               <div className="flex items-center gap-3 mb-4">
-                <img src="/logo.png" alt="xGProAi" className="w-8 h-8 rounded-lg" />
-                <span className="text-xl font-bold text-white">xGProAi</span>
+                <img src="/logo.png" alt="xGProAi" className="w-24 h-auto rounded-lg" />
               </div>
               <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs">
                 AI-powered chart analysis for smarter trading decisions across all markets.

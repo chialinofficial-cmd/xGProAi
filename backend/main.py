@@ -174,7 +174,7 @@ def analyze_chart(
         # Check if API key is set
         if not ai_service.api_key:
             # Fallback to Mock if no key
-            print("No GEMINI_API_KEY found. Using mock data.")
+            print("No ANTHROPIC_API_KEY found. Using mock data.")
             mock_analysis = {
                 "asset": "XAU/USD",
                 "bias": "Bullish",
@@ -185,7 +185,7 @@ def analyze_chart(
             }
             analysis_data = mock_analysis
         else:
-            print("Analyzing with Gemini 1.5 Flash...")
+            print("Analyzing with Claude 3.5 Sonnet...")
             ai_result_json = ai_service.analyze_chart(file_location)
             ai_data = json.loads(ai_result_json)
             

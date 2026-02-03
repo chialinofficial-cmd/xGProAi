@@ -67,8 +67,7 @@ export default function DashboardLayout({
                 <div>
                     <div className="h-16 flex items-center justify-between px-6 border-b border-border-subtle/50">
                         <Link href="/" className="flex items-center gap-3">
-                            <img src="/logo.png" alt="xGProAi" className="w-8 h-8 rounded-lg" />
-                            <span className="text-lg font-bold tracking-tight text-white">xGProAi</span>
+                            <img src="/logo.png" alt="xGProAi" className="w-12 h-auto rounded-lg" />
                         </Link>
                         {/* Close Button (Mobile Only) */}
                         <button

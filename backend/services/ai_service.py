@@ -1,25 +1,28 @@
 import os
-import google.generativeai as genai
+import base64
+import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class AIService:
     def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
         if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = anthropic.Anthropic(api_key=self.api_key)
+            self.model = "claude-3-5-sonnet-20240620"
         else:
+            self.client = None
             self.model = None
 
     def analyze_chart(self, image_path):
-        if not self.model:
-            raise ValueError("GEMINI_API_KEY is not set. Please add it to your .env file.")
+        if not self.client:
+            raise ValueError("ANTHROPIC_API_KEY is not set. Please add it to your .env file.")
 
-        # Read image
-        with open(image_path, "rb") as f:
-            image_data = f.read()
+        # Read and encode image to base64
+        with open(image_path, "rb") as image_file:
+            image_data = base64.b64encode(image_file.read()).decode("utf-8")
+            media_type = "image/jpeg" # Default to jpeg, typically fine for most uploads
 
         system_prompt = """
         You are xGProAi, an elite XAU/USD (Gold) Scalper and Swing Trader with 20 years of institutional experience.
@@ -51,30 +54,39 @@ class AIService:
         """
 
         try:
-            # Gemini supports passing image bytes directly or via mime types
-            # For simplicity with the python client, we can pass a dict for blob
-            image_part = {
-                "mime_type": "image/jpeg", # Assuming jpeg/png, gemini handles most
-                "data": image_data
-            }
-
-            response = self.model.generate_content([system_prompt, image_part])
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=1024,
+                system=system_prompt,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": image_data,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": "Analyze this XAU/USD chart and provide a trading signal."
+                            }
+                        ],
+                    }
+                ],
+            )
             
-            text_response = response.text
-            # Clean up markdown if Gemini adds it
+            # Extract text response
+            text_response = response.content[0].text
+            
+            # Clean up markdown if Claude adds it
             text_response = text_response.replace("```json", "").replace("```", "").strip()
             
             return text_response
             
         except Exception as e:
-            print(f"Error calling Gemini: {e}")
-            
-            # Debugging: List available models if this fails
-            try:
-                available_models = [m.name for m in genai.list_models()]
-                error_msg = f"Gemini Error: {e}. Available models: {available_models}"
-            except Exception as listing_error:
-                error_msg = f"Gemini Error: {e}. Could not list models: {listing_error}"
-            
-            # Raise a clean error that will be caught by main.py
-            raise Exception(error_msg)
+            print(f"Error calling Claude: {e}")
+            raise Exception(f"Claude Error: {e}")
