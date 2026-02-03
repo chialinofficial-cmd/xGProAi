@@ -22,7 +22,8 @@ export default function DashboardLayout({
 
         const fetchCredits = async () => {
             try {
-                const res = await fetch('http://localhost:8000/stats', {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const res = await fetch(`${apiUrl}/stats`, {
                     headers: {
                         'X-User-ID': user.uid
                     }
