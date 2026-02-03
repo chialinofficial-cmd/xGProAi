@@ -10,7 +10,7 @@ class AIService:
         self.api_key = os.getenv("ANTHROPIC_API_KEY")
         if self.api_key:
             self.client = anthropic.Anthropic(api_key=self.api_key)
-            self.model = "claude-3-5-sonnet-20240620"
+            self.model = "claude-3-5-sonnet-20241022"
         else:
             self.client = None
             self.model = None

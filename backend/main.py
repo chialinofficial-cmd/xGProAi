@@ -179,7 +179,7 @@ def analyze_chart(
                 "asset": "XAU/USD",
                 "bias": "Bullish",
                 "confidence": 88,
-                "summary": "Mock: Strong rejection from 2040 support level. RSI divergence suggests upward momentum. Target 2060.",
+                "summary": "Mock: Rejection from 4920 support level. Uptrend continuing.",
                 "image_path": file_location,
                 "user_id": x_user_id
             }
@@ -204,7 +204,7 @@ def analyze_chart(
         # Fallback error data
         analysis_data = {
             "asset": "XAU/USD",
-            "bias": "Neutral",
+            "bias": "Error",
             "confidence": 0,
             "summary": f"AI Error: {str(e)}",
             "image_path": file_location,
