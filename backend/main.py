@@ -169,11 +169,12 @@ def analyze_chart(
         
         ai_service = AIService()
         
+        ai_service = AIService()
+        
         # Check if API key is set
-        # FORCE MOCK DATA (User Request)
-        if True or not ai_service.api_key:
+        if not ai_service.api_key:
             # Fallback to Mock if no key
-            print("No OpenAI API Key found. Using mock data.")
+            print("No GEMINI_API_KEY found. Using mock data.")
             mock_analysis = {
                 "asset": "XAU/USD",
                 "bias": "Bullish",
@@ -184,7 +185,7 @@ def analyze_chart(
             }
             analysis_data = mock_analysis
         else:
-            print("Analyzing with GPT-4o...")
+            print("Analyzing with Gemini 1.5 Flash...")
             ai_result_json = ai_service.analyze_chart(file_location)
             ai_data = json.loads(ai_result_json)
             
