@@ -11,6 +11,12 @@ class Analysis(Base):
     bias = Column(String) # Bullish, Bearish, Neutral
     confidence = Column(Integer)
     summary = Column(String)
+    entry = Column(Float, nullable=True)
+    sl = Column(Float, nullable=True)
+    tp1 = Column(Float, nullable=True)
+    tp2 = Column(Float, nullable=True)
+    risk_reward = Column(String, nullable=True)
+    sentiment = Column(String, nullable=True)
     user_id = Column(String, index=True) # Firebase UID
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

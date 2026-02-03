@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
@@ -8,17 +8,15 @@ from database import SessionLocal, engine
 import shutil
 import os
 import datetime
+import json
 from auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-
-app = FastAPI(title="xGProAi Backend", version="1.0")
-
 from fastapi.staticfiles import StaticFiles
 from routers import payment
 
 # Create Tables on Startup
-@app.on_event("startup")
-def on_startup():
-    models.Base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="xGProAi Backend", version="1.0")
 
 app.include_router(payment.router)
 
@@ -64,24 +62,31 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class AnalysisCreate(BaseModel):
-    asset: str
-    bias: str
-    confidence: int
-    summary: str
-
 class AnalysisResponse(BaseModel):
     id: int
     asset: str
     bias: str
     confidence: int
     summary: str
+    entry: float | None = None
+    sl: float | None = None
+    tp1: float | None = None
+    tp2: float | None = None
+    risk_reward: str | None = None
+    sentiment: str | None = None
     image_path: str
     created_at: datetime.datetime
     
     class Config:
         orm_mode = True
 
+class StatsResponse(BaseModel):
+    total_analyses: int
+    charts_analyzed: int
+    ai_responses: int
+    credits_remaining: int
+
+# Routes
 @app.post("/signup", response_model=UserResponse)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -111,7 +116,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "xGProAi Backend (Online)"}
@@ -124,8 +128,6 @@ def upload_chart(file: UploadFile = File(...)):
     with open(file_location, "wb+") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"filename": file.filename, "location": file_location}
-
-from fastapi import Header
 
 @app.post("/analyze", response_model=AnalysisResponse)
 def analyze_chart(
@@ -165,9 +167,6 @@ def analyze_chart(
     # 2. AI Analysis
     try:
         from services.ai_service import AIService
-        import json
-        
-        ai_service = AIService()
         
         ai_service = AIService()
         
@@ -190,11 +189,27 @@ def analyze_chart(
             ai_data = json.loads(ai_result_json)
             
             # Map AI result to DB model
+            levels = ai_data.get("levels", {})
+            metrics = ai_data.get("metrics", {})
+            
+            # Robust float conversion helper
+            def to_float(val):
+                try:
+                    return float(str(val).replace(",", "")) if val else None
+                except:
+                    return None
+
             analysis_data = {
                 "asset": "XAU/USD",
                 "bias": ai_data.get("bias", "Neutral"),
                 "confidence": ai_data.get("confidence", 50),
                 "summary": ai_data.get("summary", "Analysis failed."),
+                "entry": to_float(levels.get("entry")),
+                "sl": to_float(levels.get("sl")),
+                "tp1": to_float(levels.get("tp1")),
+                "tp2": to_float(levels.get("tp2")),
+                "risk_reward": metrics.get("risk_reward", "N/A"),
+                "sentiment": metrics.get("sentiment", "Neutral"),
                 "image_path": file_location,
                 "user_id": x_user_id
             }
@@ -207,6 +222,9 @@ def analyze_chart(
             "bias": "Error",
             "confidence": 0,
             "summary": f"AI Error: {str(e)}",
+            "entry": 0.0, 
+            "sl": 0.0,
+            "tp1": 0.0,
             "image_path": file_location,
             "user_id": x_user_id
         }
@@ -241,19 +259,12 @@ def get_analysis(analysis_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Analysis not found")
     return analysis
 
-class StatsResponse(BaseModel):
-    total_analyses: int
-    charts_analyzed: int
-    ai_responses: int
-    credits_remaining: int
-
 @app.get("/stats", response_model=StatsResponse)
 def get_stats(
     db: Session = Depends(get_db),
     x_user_id: str = Header(None)
 ):
     if not x_user_id:
-        # Return default/global stats or zeros if unauthenticated
         return {
             "total_analyses": 0,
             "charts_analyzed": 0,
