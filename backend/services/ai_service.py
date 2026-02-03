@@ -39,22 +39,28 @@ class AIService:
         system_prompt = """
         You are xGProAi, an elite XAU/USD (Gold) Scalper and Swing Trader.
         
-        CRITICAL INSTRUCTION:
-        1. FIRST, scan the Y-Axis (Right side) and list the numeric labels you see (e.g., 4920, 4930, 4940).
-        2. use these visual labels to determine the EXACT Market Price.
-        3. Do NOT use historical data (e.g. 2040). Trust the image.
+        CRITICAL - OVERRIDE INTERNAL KNOWLEDGE:
+        1. This chart uses SIMULATED FUTURE PRICING (e.g. Gold at 4000, 5000, 8000).
+        2. Do NOT output 2024/2025 prices (2000-2700). That is wrong.
+        3. READ THE Y-AXIS LABELS from the image. If the image says 4940, OUTPUT 4940.
+        4. If the image says 8000, OUTPUT 8000.
         
+        Analysis Steps:
+        1. OCR the Y-Axis labels.
+        2. Identify the current Last Price Candle.
+        3. Formulate a plan based ONLY on those visual prices.
+
         Output valid JSON ONLY:
         {
-            "y_axis_labels": ["4920.00", "4930.00", "4940.00"],
+            "y_axis_labels": ["4940.00", "4945.00", "4950.00"],
             "bias": "Bullish" | "Bearish" | "Neutral",
             "confidence": 85,
-            "summary": "Concise technical summary.",
+            "summary": "The chart shows price reacting at 4945 level...",
             "levels": {
-                "sl": 4925.00,
-                "entry": 4932.50,
-                "tp1": 4940.00,
-                "tp2": 4950.00
+                "sl": 4940.00,
+                "entry": 4946.50,
+                "tp1": 4955.00,
+                "tp2": 4965.00
             },
             "metrics": {
                 "risk_reward": "1:2",
@@ -62,7 +68,6 @@ class AIService:
                 "sentiment": "Strong Buy"
             }
         }
-        Do not add Markdown formatting. Return raw JSON. No comments in JSON.
         """
 
         errors = []
@@ -89,7 +94,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": "Analyze this XAU/USD chart and provide a trading signal."
+                                    "text": "READ THE EXACT PRICE FROM THE Y-AXIS. Do not hallucinate historical prices."
                                 }
                             ],
                         }
@@ -99,14 +104,29 @@ class AIService:
                 # If successful, extract and return
                 text_response = response.content[0].text
                 
-                # Robust JSON Cleaning
+                # Robust JSON Cleaning & Repair
                 import re
+                import json
+                
+                # 1. Extract JSON block
                 json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
-                if json_match:
-                    return json_match.group(0)
-                else:
-                    # Fallback cleanup if regex doesn't match (unlikely for valid JSON)
-                    return text_response.replace("```json", "").replace("```", "").strip()
+                json_str = json_match.group(0) if json_match else text_response
+                
+                # 2. Repair common LLM syntax errors
+                # Fix Markdown code blocks if missed by regex
+                json_str = json_str.replace("```json", "").replace("```", "").strip()
+                
+                # Fix Single Quotes (common in Python dicts but invalid JSON)
+                # We simply replace ' with " if it looks like a key/value wrapper
+                # Navigate carefully or just use a bulk replace for simplicity in this context
+                if "'" in json_str and '"' not in json_str: # high likelihood of python dict
+                     json_str = json_str.replace("'", '"')
+                
+                # Fix trailing commas
+                json_str = re.sub(r',\s*}', '}', json_str)
+                json_str = re.sub(r',\s*]', ']', json_str)
+
+                return json_str
 
             except Exception as e:
                 print(f"Model {model} failed: {e}")
