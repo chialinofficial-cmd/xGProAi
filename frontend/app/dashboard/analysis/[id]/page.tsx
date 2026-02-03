@@ -12,6 +12,12 @@ interface Analysis {
     summary: string;
     created_at: string;
     image_path: string;
+    entry?: number;
+    sl?: number;
+    tp1?: number;
+    tp2?: number;
+    risk_reward?: string;
+    sentiment?: string;
 }
 
 export default function AnalysisPage() {
@@ -77,14 +83,17 @@ export default function AnalysisPage() {
         ? `${apiUrl}/${analysis.image_path.replace(/\\/g, "/")}`
         : '';
 
-    // Mock Extended Data (Simulating advanced backend analysis)
+    // Use Real Analysis Data
     const isBullish = analysis.bias.toLowerCase() === 'bullish';
     const signalColor = isBullish ? 'green' : 'red';
-    const currentPrice = 2040.50;
-    const entryPrice = 2040.58;
-    const slPrice = 2037.11;
-    const tp1Price = 2044.85;
-    const tp2Price = 2047.01;
+
+    // Fallback to 0 if data missing, but use the API data
+    const currentPrice = analysis.entry || 0;
+    const entryPrice = analysis.entry || 0;
+    const slPrice = analysis.sl || 0;
+    const tp1Price = analysis.tp1 || 0;
+    const tp2Price = analysis.tp2 || 0;
+    const riskReward = analysis.risk_reward || "1:2";
 
     const handleExportPDF = async () => {
         // Dynamic import to avoid SSR issues
@@ -321,7 +330,7 @@ export default function AnalysisPage() {
                     <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center pb-2 border-b border-gray-800">
                             <span className="text-gray-400">Risk/Reward</span>
-                            <span className="text-white font-bold">1 : 1.85</span>
+                            <span className="text-white font-bold">{riskReward}</span>
                         </div>
                         <div className="flex justify-between items-center pb-2 border-b border-gray-800">
                             <span className="text-gray-400">Confidence</span>
