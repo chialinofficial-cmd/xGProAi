@@ -113,13 +113,17 @@ def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str
         
         if not response.ok or not res_data.get("status"):
             print(f"Paystack Error: {res_data}")
-            raise HTTPException(status_code=400, detail="Payment initialization failed")
+            # Return either the Paystack message or a default string
+            error_msg = res_data.get("message", "Payment initialization failed at Paystack")
+            raise HTTPException(status_code=400, detail=error_msg)
             
         return {"authorization_url": res_data["data"]["authorization_url"]}
         
+    except HTTPException as he:
+        # Don't wrap HTTP exceptions, let them bubble up
+        raise he
     except Exception as e:
         print(f"Paystack Exception: {e}")
-        # DEBUG: Return actual error to frontend to see what's wrong
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
