@@ -11,105 +11,7 @@ import datetime
 import json
 from auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.staticfiles import StaticFiles
-import requests
-import hashlib
-import hmac
 
-# Paystack Configuration
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
-
-class PaystackInitRequest(BaseModel):
-    amount: float
-    email: str
-
-@app.post("/paystack/initialize")
-def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str = Header(None)):
-    if not x_user_id:
-        raise HTTPException(status_code=400, detail="User ID required")
-    
-    # Amount in kobo (x100)
-    # 20 USD -> 2000 cents. BUT Paystack primarily uses NGN/GHS/ZAR.
-    # If the merchant account is USD-enabled, we send USD. 
-    # Let's assume user wants to charge in USD.
-    amount_kobo = int(request.amount * 100) 
-    
-    plan_tier = "monthly" if request.amount == 20 else "yearly"
-
-    headers = {
-        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    # Callback URL (frontend)
-    callback_url = os.getenv("FRONTEND_URL", "http://localhost:3000") + '/dashboard?payment=success'
-    
-    payload = {
-        "email": request.email,
-        "amount": amount_kobo,
-        "currency": "USD", # Ensure your Paystack dashboard has USD enabled!
-        "callback_url": callback_url,
-        "metadata": {
-            "user_id": x_user_id,
-            "plan_tier": plan_tier
-        }
-    }
-    
-    try:
-        response = requests.post("https://api.paystack.co/transaction/initialize", json=payload, headers=headers)
-        res_data = response.json()
-        
-        if not response.ok or not res_data.get("status"):
-            print(f"Paystack Error: {res_data}")
-            raise HTTPException(status_code=400, detail="Payment initialization failed")
-            
-        return {"authorization_url": res_data["data"]["authorization_url"]}
-        
-    except Exception as e:
-        print(f"Paystack Exception: {e}")
-        raise HTTPException(status_code=500, detail="Server error during payment init")
-
-
-@app.post("/paystack/webhook")
-async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
-    payload_bytes = await request.body()
-    signature = request.headers.get('x-paystack-signature')
-    
-    if not PAYSTACK_SECRET_KEY:
-         raise HTTPException(status_code=500, detail="Server misconfiguration")
-
-    # Verify Signature (HMAC SHA512)
-    hash_object = hmac.new(PAYSTACK_SECRET_KEY.encode('utf-8'), msg=payload_bytes, digestmod=hashlib.sha512)
-    expected_signature = hash_object.hexdigest()
-    
-    if signature != expected_signature:
-        raise HTTPException(status_code=400, detail="Invalid signature")
-        
-    event = await request.json()
-    
-    if event.get("event") == "charge.success":
-        data = event["data"]
-        metadata = data.get("metadata", {})
-        
-        user_id = metadata.get("user_id")
-        plan_tier = metadata.get("plan_tier")
-        
-        if user_id:
-            user = db.query(models.User).filter(models.User.firebase_uid == user_id).first()
-            if user:
-                now = datetime.datetime.utcnow()
-                days_to_add = 30 if plan_tier == "monthly" else 365
-                
-                if user.subscription_ends_at and user.subscription_ends_at > now:
-                     user.subscription_ends_at += datetime.timedelta(days=days_to_add)
-                else:
-                     user.subscription_ends_at = now + datetime.timedelta(days=days_to_add)
-                
-                user.plan_tier = "pro"
-                user.credits_balance = 999999 
-                db.commit()
-                print(f"Paystack Success: {user_id} upgraded to Pro ({plan_tier})")
-                
-    return {"status": "success"}
 
 
 
@@ -147,6 +49,7 @@ except Exception:
     pass
 
 # CORS Setup
+# CORS Setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -154,6 +57,106 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# -----------------
+# Paystack Integration
+# -----------------
+import requests
+import hashlib
+import hmac
+from fastapi import Request
+
+# Paystack Configuration
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
+
+class PaystackInitRequest(BaseModel):
+    amount: float
+    email: str
+
+@app.post("/paystack/initialize")
+def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str = Header(None)):
+    if not x_user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+    
+    amount_kobo = int(request.amount * 100) 
+    plan_tier = "monthly" if request.amount == 20 else "yearly"
+
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    callback_url = os.getenv("FRONTEND_URL", "http://localhost:3000") + '/dashboard?payment=success'
+    
+    payload = {
+        "email": request.email,
+        "amount": amount_kobo,
+        "currency": "USD", 
+        "callback_url": callback_url,
+        "metadata": {
+            "user_id": x_user_id,
+            "plan_tier": plan_tier
+        }
+    }
+    
+    try:
+        response = requests.post("https://api.paystack.co/transaction/initialize", json=payload, headers=headers)
+        res_data = response.json()
+        
+        if not response.ok or not res_data.get("status"):
+            print(f"Paystack Error: {res_data}")
+            raise HTTPException(status_code=400, detail="Payment initialization failed")
+            
+        return {"authorization_url": res_data["data"]["authorization_url"]}
+        
+    except Exception as e:
+        print(f"Paystack Exception: {e}")
+        raise HTTPException(status_code=500, detail="Server error during payment init")
+
+
+@app.post("/paystack/webhook")
+async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
+    payload_bytes = await request.body()
+    signature = request.headers.get('x-paystack-signature')
+    
+    if not PAYSTACK_SECRET_KEY:
+         # Log this specific error for easier debugging
+         print("MISSING PAYSTACK_SECRET_KEY")
+         raise HTTPException(status_code=500, detail="Server misconfiguration")
+
+    # Verify Signature (HMAC SHA512)
+    hash_object = hmac.new(PAYSTACK_SECRET_KEY.encode('utf-8'), msg=payload_bytes, digestmod=hashlib.sha512)
+    expected_signature = hash_object.hexdigest()
+    
+    if signature != expected_signature:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+        
+    event = await request.json()
+    
+    if event.get("event") == "charge.success":
+        data = event["data"]
+        metadata = data.get("metadata", {})
+        
+        user_id = metadata.get("user_id")
+        plan_tier = metadata.get("plan_tier")
+        
+        if user_id:
+            user = db.query(models.User).filter(models.User.firebase_uid == user_id).first()
+            if user:
+                now = datetime.datetime.utcnow()
+                days_to_add = 30 if plan_tier == "monthly" else 365
+                
+                if user.subscription_ends_at and user.subscription_ends_at > now:
+                     user.subscription_ends_at += datetime.timedelta(days=days_to_add)
+                else:
+                     user.subscription_ends_at = now + datetime.timedelta(days=days_to_add)
+                
+                user.plan_tier = "pro"
+                user.credits_balance = 999999 
+                db.commit()
+                print(f"Paystack Success: {user_id} upgraded to Pro ({plan_tier})")
+                
+    return {"status": "success"}
 
 # Dependency
 def get_db():
