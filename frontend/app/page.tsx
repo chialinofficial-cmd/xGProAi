@@ -34,19 +34,26 @@ export default function Home() {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/payment/create?amount=" + amount, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/paystack/initialize`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           "X-User-ID": user.uid
-        }
+        },
+        body: JSON.stringify({
+          amount: amount,
+          email: user.email
+        })
       });
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
       } else {
         alert("Payment creation failed");
       }
     } catch (e) {
+      console.error(e);
       alert("Error creating payment");
     }
   };
