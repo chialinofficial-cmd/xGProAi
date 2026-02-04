@@ -28,8 +28,10 @@ class User(Base):
     hashed_password = Column(String, nullable=True) # Optional if using Firebase only
     firebase_uid = Column(String, unique=True, index=True) 
     full_name = Column(String, default="Trader")
-    plan_tier = Column(String, default="free") # free, pro
-    credits = Column(Integer, default=3)
+    plan_tier = Column(String, default="trial") # trial, pro, free
+    credits_balance = Column(Integer, default=10) # 10 credits for trial
+    trial_ends_at = Column(DateTime, nullable=True)
+    subscription_ends_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class Payment(Base):

@@ -1,10 +1,31 @@
 "use client";
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ProfilePage() {
     const { user } = useAuth();
+    const [profileData, setProfileData] = useState<any>(null);
+
+    useEffect(() => {
+        if (!user) return;
+        const fetchProfile = async () => {
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+                const res = await fetch(`${apiUrl}/stats`, {
+                    headers: { 'X-User-ID': user.uid }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfileData(data);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchProfile();
+    }, [user]);
 
     return (
         <div className="space-y-6">
@@ -115,7 +136,16 @@ export default function ProfilePage() {
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                                 <span className="text-sm">Plan Type</span>
                             </div>
-                            <span className="bg-[#1a1d24] text-gray-400 text-xs px-2 py-1 rounded border border-border-subtle">(no active plan)</span>
+                            <div className="text-right">
+                                <span className={`text-xs px-2 py-1 rounded border font-bold uppercase ${profileData?.plan_tier === 'pro' ? 'bg-gold/10 text-gold border-gold/30' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>
+                                    {profileData?.plan_tier || "free"}
+                                </span>
+                                {profileData?.trial_ends_at && profileData.plan_tier === 'trial' && (
+                                    <p className="text-[10px] text-yellow-500 mt-1">
+                                        Exp: {new Date(profileData.trial_ends_at).toLocaleDateString()}
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex justify-between items-center">
@@ -123,7 +153,9 @@ export default function ProfilePage() {
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 <span className="text-sm">Next Billing</span>
                             </div>
-                            <span className="text-white font-medium text-sm">N/A</span>
+                            <span className="text-white font-medium text-sm">
+                                {profileData?.subscription_ends_at ? new Date(profileData.subscription_ends_at).toLocaleDateString() : 'N/A'}
+                            </span>
                         </div>
 
                         <div className="flex justify-between items-center">
@@ -131,7 +163,9 @@ export default function ProfilePage() {
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                                 <span className="text-sm">Credits Left</span>
                             </div>
-                            <span className="bg-blue-600/10 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-600/20">0</span>
+                            <span className="bg-blue-600/10 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-600/20">
+                                {profileData?.plan_tier === 'pro' ? '∞' : (profileData?.credits_remaining || 0)}
+                            </span>
                         </div>
                     </div>
                 </div>

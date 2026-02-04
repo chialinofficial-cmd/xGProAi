@@ -341,47 +341,48 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-white mb-16">Simple, Transparent Pricing</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
 
-            {/* Tier 1 */}
+            {/* Tier 1: Monthly */}
             <div className="p-8 rounded-2xl bg-surface-card border border-border-subtle flex flex-col">
-              <h3 className="text-xl font-bold text-gray-300">Active Trader</h3>
+              <h3 className="text-xl font-bold text-gray-300">Monthly Pro</h3>
               <div className="my-6">
-                <span className="text-4xl font-bold text-white">$10</span>
-                <span className="text-gray-500">/week</span>
+                <span className="text-4xl font-bold text-white">$20</span>
+                <span className="text-gray-500">/mo</span>
               </div>
               <ul className="space-y-4 text-left flex-grow mb-8 text-gray-400 text-sm">
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> 10 Analysis Uploads / Day</li>
+                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Unlimited Analysis Uploads</li>
                 <li className="flex items-center gap-2"><span className="text-gold">✓</span> Standard Processing Speed</li>
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Basic Sentiment Score</li>
+                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Cancel Anytime</li>
               </ul>
               <button
-                onClick={() => handlePayment(10)}
+                onClick={() => handlePayment(20)}
                 className="w-full py-3 rounded-lg border border-gold/30 text-gold hover:bg-gold/10 transition-colors font-semibold"
               >
-                Start Weekly Plan
+                Get Monthly
               </button>
             </div>
 
-            {/* Tier 2 */}
+            {/* Tier 2: Yearly */}
             <div className="relative p-8 rounded-2xl bg-surface-card border border-gold-dark shadow-[0_0_30px_rgba(212,175,55,0.1)] flex flex-col transform md:-translate-y-4">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gold text-black text-xs font-bold px-3 py-1 rounded-full uppercase">
-                Most Popular
+                Best Value (Save 15%)
               </div>
-              <h3 className="text-xl font-bold text-white">Gold Pro</h3>
+              <h3 className="text-xl font-bold text-white">Yearly Pro</h3>
               <div className="my-6">
-                <span className="text-4xl font-bold text-gradient-gold">$19.99</span>
-                <span className="text-gray-500">/mo</span>
+                <span className="text-4xl font-bold text-gradient-gold">$204</span>
+                <span className="text-gray-500">/yr</span>
+                <p className="text-xs text-green-400 mt-2">Billed at $17/mo</p>
               </div>
               <ul className="space-y-4 text-left flex-grow mb-8 text-gray-300 text-sm">
                 <li className="flex items-center gap-2"><span className="text-gold">✓</span> Unlimited Analysis Uploads</li>
                 <li className="flex items-center gap-2"><span className="text-gold">✓</span> Priority Server Processing</li>
                 <li className="flex items-center gap-2"><span className="text-gold">✓</span> Macro Context (DXY Correlation)</li>
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Trade Setup Generator</li>
+                <li className="flex items-center gap-2"><span className="text-gold">✓</span> 2 Months Free</li>
               </ul>
               <button
-                onClick={() => handlePayment(19.99)}
+                onClick={() => handlePayment(204)}
                 className="w-full py-3 rounded-lg bg-gold hover:bg-gold-light text-black font-bold transition-all shadow-lg shadow-gold/20"
               >
-                Get Gold Pro
+                Get Yearly Pro
               </button>
             </div>
 

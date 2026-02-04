@@ -106,6 +106,9 @@ class StatsResponse(BaseModel):
     charts_analyzed: int
     ai_responses: int
     credits_remaining: int
+    plan_tier: str
+    trial_ends_at: datetime.datetime | None = None
+    subscription_ends_at: datetime.datetime | None = None
 
 # Routes
 @app.post("/signup", response_model=UserResponse)
@@ -163,21 +166,55 @@ def analyze_chart(
     user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
     
     # If user doesn't exist in DB yet, create them (lazy sync)
+    # If user doesn't exist in DB yet, create them (lazy sync)
     if not user:
-        user = models.User(firebase_uid=x_user_id, plan_tier="free")
+        # 3-Day Free Trial
+        trial_expiry = datetime.datetime.utcnow() + datetime.timedelta(days=3)
+        user = models.User(
+            firebase_uid=x_user_id, 
+            plan_tier="trial",
+            credits_balance=10,
+            trial_ends_at=trial_expiry
+        )
         db.add(user)
         db.commit()
         db.refresh(user)
 
-    if user.plan_tier != "pro":
-        today = datetime.datetime.utcnow().date()
-        today_count = db.query(models.Analysis).filter(
-            models.Analysis.user_id == x_user_id,
-            models.Analysis.created_at >= today
-        ).count()
+    # 1. ACCESS CONTROL LOGIC
+    allow_analysis = False
     
-        if today_count >= 3:
-            raise HTTPException(status_code=403, detail="Daily credit limit reached (3/3). Upgrade to Pro.")
+    # Check Pro Status
+    if user.plan_tier == "pro":
+        if user.subscription_ends_at and user.subscription_ends_at > datetime.datetime.utcnow():
+            allow_analysis = True
+        else:
+            # Subscription expired, downgrade to expired trial
+            user.plan_tier = "free"
+            db.commit()
+            raise HTTPException(status_code=403, detail="Subscription expired. Please renew.")
+            
+    # Check Trial Status
+    elif user.plan_tier == "trial":
+        now = datetime.datetime.utcnow()
+        if user.trial_ends_at and now > user.trial_ends_at:
+             user.plan_tier = "free"
+             db.commit()
+             raise HTTPException(status_code=403, detail="Free trial expired (3 days ended). Please upgrade to Pro.")
+        
+        if user.credits_balance <= 0:
+             raise HTTPException(status_code=403, detail="Trial credits exhausted (10/10 used). Please upgrade to Pro.")
+             
+        # Deduct Credit if Trial
+        user.credits_balance -= 1
+        allow_analysis = True
+        db.commit() # Save deduction
+        
+    else:
+        # Free Tier (Expired Trial)
+        raise HTTPException(status_code=403, detail="Trial expired. Please upgrade to Pro for unlimited access.")
+
+    if not allow_analysis:
+         raise HTTPException(status_code=403, detail="Access denied.")
 
     # 1. Save File
     # Use /tmp for Vercel Serverless compatibility
@@ -302,20 +339,23 @@ def get_stats(
             "total_analyses": 0,
             "charts_analyzed": 0,
             "ai_responses": 0,
-            "credits_remaining": 3
+            "credits_remaining": 0,
+            "plan_tier": "unknown"
         }
 
-    count = db.query(models.Analysis).filter(models.Analysis.user_id == x_user_id).count()
+    # Fetch User Freshly
+    user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
+    tier = user.plan_tier if user else "free"
+    credits = user.credits_balance if user else 0
     
-    today = datetime.datetime.utcnow().date()
-    today_count = db.query(models.Analysis).filter(
-        models.Analysis.user_id == x_user_id,
-        models.Analysis.created_at >= today
-    ).count()
+    count = db.query(models.Analysis).filter(models.Analysis.user_id == x_user_id).count()
 
     return {
         "total_analyses": count,
         "charts_analyzed": count, 
         "ai_responses": count,
-        "credits_remaining": max(0, 3 - today_count)
+        "credits_remaining": credits,
+        "plan_tier": tier,
+        "trial_ends_at": user.trial_ends_at if user else None,
+        "subscription_ends_at": user.subscription_ends_at if user else None
     }
