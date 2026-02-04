@@ -20,12 +20,31 @@ app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 
 app.include_router(payment.router)
 
-# Create uploads directory (ignore if fails, e.g. read-only file system)
+from fastapi.responses import FileResponse
+
+# Custom Image Serving (Handles /tmp for Vercel)
+@app.get("/uploads/{filename}")
+async def serve_upload(filename: str):
+    # Priority 1: Check /tmp (Vercel session uploads)
+    tmp_path = os.path.join("/tmp", filename)
+    if os.path.exists(tmp_path):
+        return FileResponse(tmp_path)
+    
+    # Priority 2: Check local uploads (Persistent/Dev)
+    local_path = os.path.join("uploads", filename)
+    if os.path.exists(local_path):
+        return FileResponse(local_path)
+        
+    raise HTTPException(status_code=404, detail="Image not found")
+
+# Still mount static for other potential assets if needed, but the route above takes precedence for specific files
 try:
     os.makedirs("uploads", exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-except Exception as e:
-    print(f"Warning: Could not mount /uploads: {e}")
+    # mount to a different name to avoid conflict if desired, or keep as fallback
+    # app.mount("/static_uploads", StaticFiles(directory="uploads"), name="uploads")
+    pass 
+except Exception:
+    pass
 
 # CORS Setup
 app.add_middleware(
@@ -162,12 +181,21 @@ def analyze_chart(
 
     # 1. Save File
     # Use /tmp for Vercel Serverless compatibility
-    upload_dir = "/tmp"
+    filename = file.filename
+    upload_dir = "/tmp" if os.path.exists("/tmp") else "uploads"
     os.makedirs(upload_dir, exist_ok=True)
-    file_location = f"{upload_dir}/{file.filename}"
     
-    with open(file_location, "wb+") as buffer:
+    physical_path = os.path.join(upload_dir, filename)
+    
+    # DB Path: Always use "uploads/" prefix so frontend URLs work consistently
+    # e.g. https://api.../uploads/image.png
+    db_image_path = f"uploads/{filename}"
+    
+    with open(physical_path, "wb+") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
+    # Pass physical path to AI Service
+    file_location = physical_path
 
     # 2. AI Analysis
     try:
@@ -215,7 +243,7 @@ def analyze_chart(
                 "tp2": to_float(levels.get("tp2")),
                 "risk_reward": metrics.get("risk_reward", "N/A"),
                 "sentiment": metrics.get("sentiment", "Neutral"),
-                "image_path": file_location,
+                "image_path": db_image_path,
                 "user_id": x_user_id
             }
 
