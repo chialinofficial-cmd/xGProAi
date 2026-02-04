@@ -86,8 +86,21 @@ def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str
     if not x_user_id:
         raise HTTPException(status_code=400, detail="User ID required")
     
-    amount_kobo = int(request.amount * 100) 
-    plan_tier = "monthly" if request.amount == 20 else "yearly"
+    # Paystack Configured for GHS (Ghana Cedis)
+    # Conversion Rate approx 1 USD = 15 GHS
+    if request.amount == 20: 
+        amount_local = 300   # 300 GHS for Monthly
+        plan_tier = "monthly"
+    elif request.amount == 204:
+        amount_local = 3000  # 3,000 GHS for Yearly
+        plan_tier = "yearly"
+    else:
+        # Fallback for dynamic amounts
+        amount_local = request.amount * 15
+        plan_tier = "custom"
+
+    # Paystack requires amount in smallest currency unit (Pesewas for GHS) -> * 100
+    amount_kobo = int(amount_local * 100) 
 
     headers = {
         "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
@@ -99,7 +112,7 @@ def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str
     payload = {
         "email": request.email,
         "amount": amount_kobo,
-        "currency": "USD", 
+        "currency": "GHS", # GHS for Ghana Cedis
         "callback_url": callback_url,
         "metadata": {
             "user_id": x_user_id,
