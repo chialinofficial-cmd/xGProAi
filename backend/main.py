@@ -351,64 +351,47 @@ def analyze_chart(
         
         ai_service = AIService()
         
-        # Check if API key is set
         if not ai_service.api_key:
-            # Fallback to Mock if no key
-            print("No ANTHROPIC_API_KEY found. Using mock data.")
-            mock_analysis = {
-                "asset": "XAU/USD",
-                "bias": "Bullish",
-                "confidence": 88,
-                "summary": "Mock: Rejection from 4920 support level. Uptrend continuing.",
-                "image_path": file_location,
-                "user_id": x_user_id
-            }
-            analysis_data = mock_analysis
-        else:
-            print("Analyzing with Claude 3.5 Sonnet...")
-            ai_result_json = ai_service.analyze_chart(file_location)
-            ai_data = json.loads(ai_result_json)
-            
-            # Map AI result to DB model
-            levels = ai_data.get("levels", {})
-            metrics = ai_data.get("metrics", {})
-            
-            # Robust float conversion helper
-            def to_float(val):
-                try:
-                    return float(str(val).replace(",", "")) if val else None
-                except:
-                    return None
+             print("Error: ANTHROPIC_API_KEY not found in environment.")
+             raise HTTPException(status_code=500, detail="Configuration Error: ANTHROPIC_API_KEY is missing. Please add it to your environment variables to perform real AI analysis.")
 
-            analysis_data = {
-                "asset": "XAU/USD",
-                "bias": ai_data.get("bias", "Neutral"),
-                "confidence": ai_data.get("confidence", 50),
-                "summary": ai_data.get("summary", "Analysis failed."),
-                "entry": to_float(levels.get("entry")),
-                "sl": to_float(levels.get("sl")),
-                "tp1": to_float(levels.get("tp1")),
-                "tp2": to_float(levels.get("tp2")),
-                "risk_reward": metrics.get("risk_reward", "N/A"),
-                "sentiment": metrics.get("sentiment", "Neutral"),
-                "image_path": db_image_path,
-                "user_id": x_user_id
-            }
+        print("Analyzing with Claude 3.5 Sonnet...")
+        ai_result_json = ai_service.analyze_chart(file_location)
+        ai_data = json.loads(ai_result_json)
+        
+        # Map AI result to DB model
+        levels = ai_data.get("levels", {})
+        metrics = ai_data.get("metrics", {})
+        
+        # Robust float conversion helper
+        def to_float(val):
+            try:
+                return float(str(val).replace(",", "")) if val else None
+            except:
+                return None
 
-    except Exception as e:
-        print(f"AI Analysis Failed: {e}")
-        # Fallback error data
         analysis_data = {
             "asset": "XAU/USD",
-            "bias": "Error",
-            "confidence": 0,
-            "summary": f"AI Error: {str(e)}",
-            "entry": 0.0, 
-            "sl": 0.0,
-            "tp1": 0.0,
-            "image_path": file_location,
+            "bias": ai_data.get("bias", "Neutral"),
+            "confidence": ai_data.get("confidence", 50),
+            "summary": ai_data.get("summary", "Analysis failed."),
+            "entry": to_float(levels.get("entry")),
+            "sl": to_float(levels.get("sl")),
+            "tp1": to_float(levels.get("tp1")),
+            "tp2": to_float(levels.get("tp2")),
+            "risk_reward": metrics.get("risk_reward", "N/A"),
+            "sentiment": metrics.get("sentiment", "Neutral"),
+            "image_path": db_image_path,
             "user_id": x_user_id
         }
+
+    except HTTPException as he:
+        # Re-raise HTTP exceptions (like the 500 above)
+        raise he
+    except Exception as e:
+        print(f"AI Analysis Failed: {e}")
+        # Return a server error instead of mock data
+        raise HTTPException(status_code=500, detail=f"AI Analysis Failed: {str(e)}")
 
     # 3. Save to DB
     db_analysis = models.Analysis(**analysis_data)
