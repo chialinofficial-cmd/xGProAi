@@ -37,35 +37,50 @@ class AIService:
             image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
         system_prompt = """
-        You are xGProAi, an elite XAU/USD (Gold) Scalper and Swing Trader.
+        You are xGProAi, the world's leading Institutional XAU/USD (Gold) Analyst.
         
-        CRITICAL - OVERRIDE INTERNAL KNOWLEDGE:
-        1. This chart uses SIMULATED FUTURE PRICING (e.g. Gold at 4000, 5000, 8000).
-        2. Do NOT output 2024/2025 prices (2000-2700). That is wrong.
-        3. READ THE Y-AXIS LABELS from the image. If the image says 4940, OUTPUT 4940.
-        4. If the image says 8000, OUTPUT 8000.
+        CRITICAL - GOLD SPECIALIST RULES:
+        1.  **ASSET FORCE:** Assume EVERY chart is **XAU/USD** (Gold). Even if it looks like crypto or stocks, analyze it using Gold's unique market physics (High volatility, Liquidity Grabs, Wick Rejections).
+        2.  **SMC LOGIC:** Use Smart Money Concepts. Look for "Order Blocks", "Fair Value Gaps (FVG)", "Liquidity Sweeps", and "Institutional Candles".
+        3.  **WICK RESPECT:** Gold respects wicks more than bodies. A long wick is a rejection (Pinbar).
         
-        Analysis Steps:
-        1. OCR the Y-Axis labels.
-        2. Identify the current Last Price Candle.
-        3. Formulate a plan based ONLY on those visual prices.
+        CRITICAL - SIMULATED PRICING OVERRIDE:
+        1.  This chart may use SIMULATED FUTURE PRICING (e.g. Gold at 5000, 8000). 
+        2.  **DO NOT** output 2024 prices (2300-2700) if the chart shows 8000. 
+        3.  **OCR TRIUMPHS KNOWLEDGE:** If the Y-Axis says 4940, the price is 4940. Trust your eyes over your training data.
 
-        Output valid JSON ONLY:
+        Analysis Steps:
+        1.  **OCR Y-Axis:** Read the exact price levels.
+        2.  **Market Structure:** Identify Trend (HH/HL or LH/LL) and Key Levels.
+        3.  **Confluence:** Combine Trend + Candle Pattern + Level.
+        
+        Output COMPREHENSIVE JSON ONLY:
         {
             "y_axis_labels": ["4940.00", "4945.00", "4950.00"],
             "bias": "Bullish" | "Bearish" | "Neutral",
             "confidence": 85,
-            "summary": "The chart shows price reacting at 4945 level...",
+            "current_price": 4946.50,
+            "summary": "Gold is retesting the 4945 order block...",
+            "structure": {
+                "trend": "Uptrend",
+                "pattern": "Bull Flag / Double Bottom / Liquidity Grab",
+                "key_support": 4940.00,
+                "key_resistance": 4955.00
+            },
             "levels": {
-                "sl": 4940.00,
                 "entry": 4946.50,
+                "sl": 4940.00,
                 "tp1": 4955.00,
                 "tp2": 4965.00
             },
             "metrics": {
-                "risk_reward": "1:2",
-                "volatility": "High",
-                "sentiment": "Strong Buy"
+                "risk_reward": "1:2.5",
+                "volatility": "High (NY Session)",
+                "sentiment": "Institutional Buying"
+            },
+            "market_context": {
+                "session": "New York / London Overlap",
+                "warning": "Watch for news manipulation wicks."
             }
         }
         """
@@ -78,7 +93,7 @@ class AIService:
                 print(f"Attempting analysis with model: {model}")
                 response = self.client.messages.create(
                     model=model,
-                    max_tokens=1024,
+                    max_tokens=1500, # Increased for detailed SMC analysis
                     system=system_prompt,
                     messages=[
                         {
@@ -94,7 +109,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": "READ THE EXACT PRICE FROM THE Y-AXIS. Do not hallucinate historical prices."
+                                    "text": "Analyze this XAU/USD chart using Smart Money Concepts. Look for Liquidity Grabs. READ THE EXACT Y-AXIS PRICES."
                                 }
                             ],
                         }
@@ -114,38 +129,33 @@ class AIService:
                 json_str = json_match.group(0) if json_match else text_response
                 
                 # 2. Repair common LLM syntax errors
-                # Fix Markdown code blocks if missed by regex
                 json_str = json_str.replace("```json", "").replace("```", "").strip()
                 
                 try:
                     # Attempt standard JSON parse
-                    json.loads(json_str)
-                    return json_str
+                    data = json.loads(json_str)
                 except json.JSONDecodeError:
-                    # Fallback: Try parsing as Python dictionary (handles single quotes, etc.)
+                    # Fallback: Try parsing as Python dictionary
                     try:
-                        # AST safely evaluates string as a python literal
                         py_dict = ast.literal_eval(json_str)
-                        # If successful, dump back to valid JSON string
-                        return json.dumps(py_dict)
+                        data = py_dict # Start working with dict
+                        json_str = json.dumps(py_dict) # Update string for return
                     except (ValueError, SyntaxError):
-                        # Last resort: Simple string replacements (trailing commas, etc)
-                         # Fix Single Quotes (common in Python dicts but invalid JSON)
+                        # Last resort: Regex cleanup
                         if "'" in json_str and '"' not in json_str: 
                              json_str = json_str.replace("'", '"')
-                        
-                        # Fix trailing commas
                         json_str = re.sub(r',\s*}', '}', json_str)
                         json_str = re.sub(r',\s*]', ']', json_str)
-                        
-                        return json_str
+                        try:
+                             data = json.loads(json_str)
+                        except:
+                             raise Exception("Failed to parse AI response")
 
-                # 3. Post-Processing: Hallucination Check & Fix
-                # The model often hallucinates ~2000-2400 (historical Gold price) even when the chart shows 4000-5000+
-                # We use the y_axis_labels (which it usually OCRs correctly) to validate the Trade Levels.
-                
+                # 3. Post-Processing: Hallucination Check & SMC Validation
                 try:
-                    data = json.loads(json_str) if isinstance(json_str, str) else json_str
+                    # Ensure all new fields exist to prevent frontend crash
+                    if "structure" not in data: data["structure"] = {}
+                    if "market_context" not in data: data["market_context"] = {}
                     
                     y_labels = data.get("y_axis_labels", [])
                     levels = data.get("levels", {})
@@ -165,35 +175,31 @@ class AIService:
                         try:
                             entry_float = float(str(entry).replace(",", ""))
                             
-                            # CHECK: Is Entry wildly far from the visual labels? (e.g. > 1000 points difference)
-                            # This catches the 2040 vs 4940 error.
+                            # HALLUCINATION CHECK: > 1000 points deviation
                             if abs(entry_float - avg_label) > 1000:
                                 print(f"HALLUCINATION DETECTED: Entry {entry_float} vs AvgLabel {avg_label}")
                                 
-                                # FIX: We can't trust the specific levels, but we can trust the BIAS (Long/Short)
-                                # and the RELATIVE distance.
-                                # Strategy: Re-center the trade around the Average Label.
-                                
-                                # Use the 'avg_label' as the rough current price.
+                                # FIX: Re-center around visual labels
                                 new_entry = avg_label
-                                
-                                # Determine direction based on TP/SL relation or Bias
                                 is_bullish = data.get("bias", "Neutral") == "Bullish"
                                 
-                                # Create standard scalping structure around the REAL price (Labels)
+                                # Gold Specific Stops (wider due to volatility)
+                                sl_dist = 6.0 # 60 pips for Gold
+                                tp_dist = 12.0 # 120 pips
+                                
                                 if is_bullish:
                                     levels["entry"] = round(new_entry, 2)
-                                    levels["sl"] = round(new_entry - 5.0, 2)   # -50 pips
-                                    levels["tp1"] = round(new_entry + 5.0, 2)  # +50 pips
-                                    levels["tp2"] = round(new_entry + 10.0, 2) # +100 pips
+                                    levels["sl"] = round(new_entry - sl_dist, 2)
+                                    levels["tp1"] = round(new_entry + tp_dist, 2)
+                                    levels["tp2"] = round(new_entry + (tp_dist * 1.5), 2)
                                 else:
                                     levels["entry"] = round(new_entry, 2)
-                                    levels["sl"] = round(new_entry + 5.0, 2)
-                                    levels["tp1"] = round(new_entry - 5.0, 2)
-                                    levels["tp2"] = round(new_entry - 10.0, 2)
+                                    levels["sl"] = round(new_entry + sl_dist, 2)
+                                    levels["tp1"] = round(new_entry - tp_dist, 2)
+                                    levels["tp2"] = round(new_entry - (tp_dist * 1.5), 2)
                                     
                                 data["levels"] = levels
-                                data["summary"] += " [SYSTEM NOTE: Prices auto-corrected based on Y-Axis OCR to fix AI hallucination.]"
+                                data["summary"] += " [System: Prices corrected to match Chart Y-Axis.]"
                                 
                                 # Re-dump to string
                                 json_str = json.dumps(data)
@@ -202,16 +208,14 @@ class AIService:
                             print(f"Error during hallucination fix: {e}")
                             
                 except Exception as parse_err:
-                    print(f"Post-processing parse warning: {parse_err}")
+                    print(f"Post-processing warning: {parse_err}")
 
                 return json_str
             
             except Exception as e:
                 print(f"Model {model} failed: {e}")
                 errors.append(f"{model}: {str(e)}")
-                # Continue to next model
                 continue
         
         # If all failed
-        error_summary = "; ".join(errors)
-        raise Exception(f"All Claude models failed. Errors: {error_summary}")
+        raise Exception(f"All Claude models failed. Errors: {'; '.join(errors)}")
