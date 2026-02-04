@@ -4,6 +4,23 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
+interface RiskManagement {
+    stop_loss_pips: number;
+    recommended_leverage: string;
+    lot_sizing: {
+        equity_1k: string;
+        equity_10k: string;
+        equity_100k: string;
+    };
+    management_rules: string[];
+}
+
+interface TechniqueConfluence {
+    fibonacci_level: string;
+    wyckoff_phase: string;
+    liquidity_trap: string;
+}
+
 interface Analysis {
     id: number;
     asset: string;
@@ -18,6 +35,8 @@ interface Analysis {
     tp2?: number;
     risk_reward?: string;
     sentiment?: string;
+    risk_management?: RiskManagement;
+    technique_confluence?: TechniqueConfluence;
 }
 
 export default function AnalysisPage() {
@@ -28,6 +47,7 @@ export default function AnalysisPage() {
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'technical' | 'chart'>('overview');
+    const [auditLog, setAuditLog] = useState<string[]>([]); // For "Copy" feedback
 
     useEffect(() => {
         if (!id) {
@@ -126,6 +146,24 @@ export default function AnalysisPage() {
         }
     };
 
+    const handleCopyAnalysis = () => {
+        const text = `
+🎯 SIGNAL: ${analysis.bias.toUpperCase()} ${analysis.asset}
+Confidence: ${analysis.confidence}%
+Entry: ${currentPrice}
+SL: ${slPrice}
+TP1: ${tp1Price}
+TP2: ${tp2Price}
+
+📝 Logic: ${analysis.summary}
+
+Manage Risk Responsibly! 🛡️
+via xGProAi
+        `;
+        navigator.clipboard.writeText(text);
+        alert("Analysis copied to clipboard!");
+    };
+
     return (
         <div className="space-y-6 animate-fade-in pb-12" id="analysis-content">
 
@@ -149,6 +187,13 @@ export default function AnalysisPage() {
 
                 <div className="flex gap-3">
                     <button
+                        onClick={handleCopyAnalysis}
+                        className="px-5 py-2.5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                        Copy
+                    </button>
+                    <button
                         onClick={handleExportPDF}
                         className="px-5 py-2.5 border border-gold/30 text-gold hover:bg-gold/10 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
                     >
@@ -167,7 +212,7 @@ export default function AnalysisPage() {
             {/* Split Layout: Signal Card (Left) vs Tabbed Content (Right) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
 
-                {/* LEFT COLUMN: The Signal & Key Metrics (Fixed Sticky style if desired, but normal for now) */}
+                {/* LEFT COLUMN: The Signal & Key Metrics */}
                 <div className="lg:col-span-4 space-y-6">
                     {/* Main Signal Card */}
                     <div className={`bg-surface-card border ${borderColor} rounded-2xl p-6 relative overflow-hidden shadow-2xl`}>
@@ -229,7 +274,7 @@ export default function AnalysisPage() {
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                             AI Analysis
                         </h3>
-                        <p className="text-gray-300 text-sm leading-relaxed">
+                        <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
                             {analysis.summary}
                         </p>
                     </div>
@@ -264,7 +309,7 @@ export default function AnalysisPage() {
 
                         {/* 1. OVERVIEW TAB */}
                         {activeTab === 'overview' && (
-                            <div className="p-6 h-full flex flex-col animate-fade-in">
+                            <div className="p-6 h-full flex flex-col animate-fade-in overflow-y-auto max-h-[700px]">
                                 <h3 className="text-xl font-bold text-white mb-6">Trade Execution Plan</h3>
 
                                 {/* Visual Range Bar */}
@@ -273,8 +318,7 @@ export default function AnalysisPage() {
                                         {/* Range Line */}
                                         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-700 -z-10"></div>
 
-                                        {/* Points */}
-                                        {/* Stop Loss */}
+                                        {/* Points - Scaled 0% - 100% just for visual layout (0, 40, 70, 90) */}
                                         <div className="absolute top-1/2 left-[10%] -translate-y-1/2 flex flex-col items-center">
                                             <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-surface-card shadow"></div>
                                             <div className="mt-2 text-center">
@@ -283,7 +327,6 @@ export default function AnalysisPage() {
                                             </div>
                                         </div>
 
-                                        {/* Entry */}
                                         <div className="absolute top-1/2 left-[40%] -translate-y-1/2 flex flex-col items-center">
                                             <div className="w-5 h-5 bg-blue-500 rounded-full border-2 border-surface-card shadow ring-4 ring-blue-500/20"></div>
                                             <div className="mb-8 text-center bg-blue-500/10 px-2 py-1 rounded">
@@ -292,7 +335,6 @@ export default function AnalysisPage() {
                                             </div>
                                         </div>
 
-                                        {/* TP1 */}
                                         <div className="absolute top-1/2 left-[70%] -translate-y-1/2 flex flex-col items-center">
                                             <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-surface-card shadow"></div>
                                             <div className="mt-2 text-center">
@@ -301,7 +343,6 @@ export default function AnalysisPage() {
                                             </div>
                                         </div>
 
-                                        {/* TP2 */}
                                         <div className="absolute top-1/2 left-[90%] -translate-y-1/2 flex flex-col items-center">
                                             <div className="w-4 h-4 bg-green-400 rounded-full border-2 border-surface-card shadow opacity-70"></div>
                                             <div className="mt-2 text-center opacity-70">
@@ -312,37 +353,88 @@ export default function AnalysisPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-auto">
-                                    <div className="border border-border-subtle rounded-xl p-5 bg-black/20">
-                                        <h4 className="text-gray-400 text-sm font-bold uppercase mb-4">Risk Management</h4>
-                                        <ul className="space-y-3 text-sm">
-                                            <li className="flex justify-between">
-                                                <span className="text-gray-500">Suggested Leverage</span>
-                                                <span className="text-white">10x - 20x</span>
-                                            </li>
-                                            <li className="flex justify-between">
-                                                <span className="text-gray-500">Risk per Trade</span>
-                                                <span className="text-white">1% - 2% of Balance</span>
-                                            </li>
-                                            <li className="flex justify-between">
-                                                <span className="text-gray-500">Stop Loss Distance</span>
-                                                <span className="text-red-400">~{Math.abs(currentPrice - slPrice).toFixed(2)} pts</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    <div className="border border-border-subtle rounded-xl p-5 bg-black/20">
-                                        <h4 className="text-gray-400 text-sm font-bold uppercase mb-4">Market Context</h4>
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                                                <div className="bg-gold h-full w-[70%]"></div>
-                                            </div>
-                                            <span className="text-xs text-gold font-bold">VOLATILITY</span>
+                                {/* RISK MANAGEMENT SECTION (New) */}
+                                {analysis.risk_management && (
+                                    <div className="mb-8 border border-gold/20 bg-gold/5 rounded-xl p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-gold font-bold text-lg flex items-center gap-2">
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 3.666A5.105 5.105 0 0112 16.5a5.105 5.105 0 01-4.742-5.833M9 10h.01M15 10h.01M9 16h6m-3 3v2" /></svg>
+                                                Fund Manager Risk Strategy
+                                            </h4>
+                                            <span className="text-xs bg-gold text-black px-2 py-1 rounded font-bold">1% RISK MODEL</span>
                                         </div>
-                                        <p className="text-gray-400 text-xs">
-                                            Market volatility is moderate. Ensure stop losses are respected to avoid liquidity wicks.
-                                        </p>
+
+                                        {/* Lot Sizing Grid */}
+                                        <div className="grid grid-cols-3 gap-4 mb-6">
+                                            <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
+                                                <p className="text-gray-400 text-[10px] uppercase mb-1">$1,000 Equity</p>
+                                                <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_1k} Lots</p>
+                                            </div>
+                                            <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
+                                                <p className="text-gray-400 text-[10px] uppercase mb-1">$10,000 Equity</p>
+                                                <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_10k} Lots</p>
+                                            </div>
+                                            <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
+                                                <p className="text-gray-400 text-[10px] uppercase mb-1">$100,000 Equity</p>
+                                                <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_100k} Lots</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Management Rules */}
+                                        <div className="bg-black/20 p-4 rounded-lg">
+                                            <h5 className="text-xs text-gray-500 font-bold uppercase mb-3">Trade Management Rules</h5>
+                                            <ul className="space-y-2">
+                                                {analysis.risk_management.management_rules.map((rule, i) => (
+                                                    <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                                                        <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                        {rule}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+
+                                {/* INSTITUTIONAL CONFLUENCE (New) */}
+                                {analysis.technique_confluence && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-auto">
+                                        <div className="border border-border-subtle rounded-xl p-5 bg-black/20">
+                                            <h4 className="text-gray-400 text-sm font-bold uppercase mb-4">Institutional Confluence</h4>
+                                            <ul className="space-y-3 text-sm">
+                                                <li className="flex flex-col gap-1">
+                                                    <span className="text-gray-500 text-xs">Wyckoff Phase</span>
+                                                    <span className="text-white font-medium">{analysis.technique_confluence.wyckoff_phase}</span>
+                                                </li>
+                                                <li className="flex flex-col gap-1">
+                                                    <span className="text-gray-500 text-xs">Fibonacci Level</span>
+                                                    <span className="text-gold font-medium">{analysis.technique_confluence.fibonacci_level}</span>
+                                                </li>
+                                                <li className="flex flex-col gap-1">
+                                                    <span className="text-gray-500 text-xs">Liquidity Trap</span>
+                                                    <span className="text-red-400 font-medium">{analysis.technique_confluence.liquidity_trap}</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div className="border border-border-subtle rounded-xl p-5 bg-black/20">
+                                            <h4 className="text-gray-400 text-sm font-bold uppercase mb-4">Market Context</h4>
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                                                    <div className="bg-gold h-full w-[85%]"></div>
+                                                </div>
+                                                <span className="text-xs text-gold font-bold">VOLATILITY</span>
+                                            </div>
+                                            <p className="text-gray-400 text-xs">
+                                                Institutional volatility detected. Ensure strict adherence to calculated lot sizes to prevent equity drawdowns during stop hunts.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!analysis.risk_management && (
+                                    <div className="border border-border-subtle rounded-xl p-5 bg-black/20 mt-auto text-center">
+                                        <p className="text-gray-500 text-sm">Legacy Analysis - No Risk Data Available.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
 

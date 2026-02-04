@@ -3,8 +3,10 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-# Secret key for JWT (should be in env, mocking for now)
-SECRET_KEY = "supersecretkeyformvp"
+import os
+
+# Secret key for JWT
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkeyformvp_fallback_dev_only")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

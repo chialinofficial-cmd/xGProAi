@@ -132,25 +132,34 @@ export default function DashboardHome() {
                     </div>
                     <p className="text-gray-400 text-xs mb-8">Summary of your uploaded chart actions</p>
 
-                    {/* Mock Chart Area */}
+                    {/* Dynamic Chart Area */}
                     <div className="h-64 w-full flex items-end justify-center gap-8 relative border-b border-gray-700/50 pb-4">
-                        {/* Y Axis Mock */}
+                        {/* Y Axis (Simplified Scale) */}
                         <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500">
-                            <span>1</span>
-                            <span>0.75</span>
-                            <span>0.5</span>
-                            <span>0.25</span>
+                            <span>{Math.max(10, stats.total_analyses)}</span>
+                            <span>{Math.round(Math.max(10, stats.total_analyses) * 0.75)}</span>
+                            <span>{Math.round(Math.max(10, stats.total_analyses) * 0.5)}</span>
+                            <span>{Math.round(Math.max(10, stats.total_analyses) * 0.25)}</span>
                             <span>0</span>
                         </div>
 
-                        {/* Bar */}
-                        <div className="w-full max-w-sm h-[75%] bg-blue-500/90 rounded-t-sm hover:opacity-80 transition-opacity relative group cursor-pointer ml-8">
-                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                XAU/USD: 1 Analysis
+                        {/* Bar for XAU/USD (Using Real Data) */}
+                        {stats.total_analyses > 0 ? (
+                            <div
+                                className="w-full max-w-sm bg-blue-500/90 rounded-t-sm hover:opacity-80 transition-all relative group cursor-pointer ml-8 animate-grow-up"
+                                style={{ height: `${Math.min(100, (stats.total_analyses / Math.max(10, stats.total_analyses)) * 75)}%` }}
+                            >
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                    XAU/USD: {stats.total_analyses} Analyses
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">
+                                No data yet
+                            </div>
+                        )}
                     </div>
-                    <div className="text-center mt-4 text-xs text-gray-400">XAU/USD</div>
+                    <div className="text-center mt-4 text-xs text-gray-400">Total Activity</div>
                 </div>
 
                 {/* Right: Recent Activity */}

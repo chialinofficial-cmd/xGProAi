@@ -8,7 +8,7 @@ export default function PaymentSuccessToast() {
     const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
-        if (searchParams.get('payment') === 'success' || searchParams.get('mock_payment') === 'success') {
+        if (searchParams.get('payment') === 'success') {
             setShowSuccess(true);
             const timer = setTimeout(() => setShowSuccess(false), 5000); // Hide after 5s
 
