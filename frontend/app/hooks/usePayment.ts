@@ -13,21 +13,31 @@ export const usePayment = () => {
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            const res = await fetch(`${apiUrl}/payment/create?amount=${amount}`, {
+
+            // Use the correct endpoint matching backend/main.py
+            const res = await fetch(`${apiUrl}/paystack/initialize`, {
                 method: "POST",
                 headers: {
+                    "Content-Type": "application/json",
                     "X-User-ID": user.uid
-                }
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    email: user.email // Backend requires email
+                })
             });
+
             const data = await res.json();
-            if (data.url) {
-                window.location.href = data.url;
+
+            if (res.ok && data.authorization_url) {
+                window.location.href = data.authorization_url;
             } else {
+                console.error("Payment Error Data:", data);
                 alert("Payment creation failed: " + (data.detail || "Unknown error"));
             }
         } catch (e) {
-            alert("Error creating payment");
-            console.error(e);
+            console.error("Payment Exception:", e);
+            alert("Error creating payment. Please check console.");
         }
     };
 
