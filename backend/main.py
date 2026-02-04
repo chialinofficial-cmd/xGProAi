@@ -69,6 +69,14 @@ from fastapi import Request
 # Paystack Configuration
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
 
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 class PaystackInitRequest(BaseModel):
     amount: float
     email: str
