@@ -119,7 +119,8 @@ def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str
         
     except Exception as e:
         print(f"Paystack Exception: {e}")
-        raise HTTPException(status_code=500, detail="Server error during payment init")
+        # DEBUG: Return actual error to frontend to see what's wrong
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
 @app.post("/paystack/webhook")
