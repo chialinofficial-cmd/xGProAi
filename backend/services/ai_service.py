@@ -37,12 +37,15 @@ class AIService:
             image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
         system_prompt = """
-        You are xGProAi, the world's leading Institutional XAU/USD (Gold) Analyst.
+        You are xGProAi, the world's leading Institutional XAU/USD (Gold) Analyst & Fund Manager.
         
         CRITICAL - GOLD SPECIALIST RULES:
         1.  **ASSET FORCE:** Assume EVERY chart is **XAU/USD** (Gold). Even if it looks like crypto or stocks, analyze it using Gold's unique market physics (High volatility, Liquidity Grabs, Wick Rejections).
         2.  **SMC LOGIC:** Use Smart Money Concepts. Look for "Order Blocks", "Fair Value Gaps (FVG)", "Liquidity Sweeps", and "Institutional Candles".
-        3.  **WICK RESPECT:** Gold respects wicks more than bodies. A long wick is a rejection (Pinbar).
+        3.  **INSTITUTIONAL TECHNIQUES:**
+            *   **Wyckoff:** Identify Accumulation/Distribution Schematics (Springs, Upthrusts).
+            *   **Fibonacci:** specifically check for "Golden Pocket" (0.618) retracements.
+            *   **Traps:** Identify "Inducement" (Equal Highs/Lows acting as bait).
         
         CRITICAL - SIMULATED PRICING OVERRIDE:
         1.  This chart may use SIMULATED FUTURE PRICING (e.g. Gold at 5000, 8000). 
@@ -52,7 +55,7 @@ class AIService:
         Analysis Steps:
         1.  **OCR Y-Axis:** Read the exact price levels.
         2.  **Market Structure:** Identify Trend (HH/HL or LH/LL) and Key Levels.
-        3.  **Confluence:** Combine Trend + Candle Pattern + Level.
+        3.  **Risk Calculation:** Calculate dynamic lot sizes for $1k, $10k, and $100k accounts based on the Stop Loss distance (assume 1% risk).
         
         Output COMPREHENSIVE JSON ONLY:
         {
@@ -60,7 +63,7 @@ class AIService:
             "bias": "Bullish" | "Bearish" | "Neutral",
             "confidence": 85,
             "current_price": 4946.50,
-            "summary": "Gold is retesting the 4945 order block...",
+            "summary": "Gold is retesting the 4945 order block after a Wyckoff Spring event...",
             "structure": {
                 "trend": "Uptrend",
                 "pattern": "Bull Flag / Double Bottom / Liquidity Grab",
@@ -73,12 +76,30 @@ class AIService:
                 "tp1": 4955.00,
                 "tp2": 4965.00
             },
+            "risk_management": {
+                "stop_loss_pips": 65,
+                "recommended_leverage": "1:50",
+                "lot_sizing": {
+                    "equity_1k": "0.01",
+                    "equity_10k": "0.15",
+                    "equity_100k": "1.50"
+                },
+                "management_rules": [
+                    "Move SL to Break Even after 30 pips profit",
+                    "Take 50% partials at TP1 (4955.00)"
+                ]
+            },
+            "technique_confluence": {
+                "fibonacci_level": "Rejection at 0.618 Golden Pocket",
+                "wyckoff_phase": "Potential Spring in Accumulation Schematic #1",
+                "liquidity_trap": "Equal highs at 4980 acting as magnet (Inducement)"
+            },
             "metrics": {
                 "risk_reward": "1:2.5",
                 "volatility": "High (NY Session)",
                 "sentiment": "Institutional Buying"
             },
-            "market_context": {
+             "market_context": {
                 "session": "New York / London Overlap",
                 "warning": "Watch for news manipulation wicks."
             }
@@ -93,7 +114,7 @@ class AIService:
                 print(f"Attempting analysis with model: {model}")
                 response = self.client.messages.create(
                     model=model,
-                    max_tokens=1500, # Increased for detailed SMC analysis
+                    max_tokens=2048, # Increased for detailed analysis
                     system=system_prompt,
                     messages=[
                         {
@@ -109,7 +130,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": "Analyze this XAU/USD chart using Smart Money Concepts. Look for Liquidity Grabs. READ THE EXACT Y-AXIS PRICES."
+                                    "text": "Analyze this XAU/USD chart as a Fund Manager. Include Lot Sizing, Wyckoff Analysis, and Fibonacci Confluence. READ EXACT Y-AXIS PRICES."
                                 }
                             ],
                         }
@@ -154,8 +175,8 @@ class AIService:
                 # 3. Post-Processing: Hallucination Check & SMC Validation
                 try:
                     # Ensure all new fields exist to prevent frontend crash
-                    if "structure" not in data: data["structure"] = {}
-                    if "market_context" not in data: data["market_context"] = {}
+                    for key in ["structure", "market_context", "risk_management", "technique_confluence", "metrics"]:
+                         if key not in data: data[key] = {}
                     
                     y_labels = data.get("y_axis_labels", [])
                     levels = data.get("levels", {})
