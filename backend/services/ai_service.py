@@ -13,11 +13,13 @@ class AIService:
             self.client = anthropic.Anthropic(api_key=self.api_key)
             # List of models to try in order of preference
             self.models_to_try = [
+                "claude-3-5-sonnet-latest",    # Generic Alias (often works when specific IDs fail)
                 "claude-3-5-sonnet-20241022",  # Latest Sonnet
                 "claude-3-5-sonnet-20240620",  # Previous Sonnet
+                "claude-3-opus-latest",        # Generic Opus
                 "claude-3-opus-20240229",      # Opus
                 "claude-3-sonnet-20240229",    # Legacy Sonnet
-                "claude-3-haiku-20240307"      # Haiku
+                "claude-3-haiku-20240307"      # Haiku (Fastest, often works)
             ]
         else:
             self.client = None
@@ -127,7 +129,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": "Analyze this XAU/USD chart. Ensure 1:2 Risk/Reward. THINK in <analysis> first."
+                                    "text": "Analyze this XAU/USD chart. Ensure 1:2 Risk/Reward. THINK in <analysis> first. JSON ONLY at the end."
                                 }
                             ],
                         }
@@ -143,14 +145,16 @@ class AIService:
                 import ast
                 
                 # 1. Extract JSON block
-                json_candidates = re.findall(r'\{.*\}', text_response, re.DOTALL)
+                # Regex improvements: find largest { ... } block even with nesting
+                # This assumes the JSON is the LAST major bracketed block
+                json_candidates = re.findall(r'\{[\s\S]*\}', text_response)
                 
                 # Extract Analysis Block (Chain of Thought)
                 analysis_match = re.search(r'<analysis>(.*?)</analysis>', text_response, re.DOTALL)
                 analysis_reasoning = analysis_match.group(1).strip() if analysis_match else "Reasoning not provided."
 
                 if json_candidates:
-                    json_str = json_candidates[-1]
+                    json_str = json_candidates[-1] # Take the last one
                 else:
                     json_str = text_response
                 
