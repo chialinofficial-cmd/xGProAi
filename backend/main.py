@@ -493,7 +493,7 @@ def get_stats(
 
 
 # --------------------------
-# ADMIN API (Protected)
+# ADMIN API V2 (Protected)
 # --------------------------
 
 ADMIN_SECRET = "admin123" # Simple protection
@@ -508,27 +508,100 @@ def get_admin_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admi
     pro_users = db.query(models.User).filter(models.User.plan_tier == "pro").count()
     total_analyses = db.query(models.Analysis).count()
     
-    # Calculate revenue (Approximation based on plan tiers, assuming $20 avg for now just for show)
-    # A real implementation would sum the 'payments' table
-    revenue_est = pro_users * 20 
+    revenue_est = pro_users * 29.99 # Updated to avg pro price
     
     return {
         "total_users": total_users,
         "pro_users": pro_users,
         "total_analyses": total_analyses,
-        "revenue_estimated": revenue_est
+        "revenue_estimated": int(revenue_est)
     }
 
 @app.get("/admin/users")
-def get_all_users(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    users = db.query(models.User).order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()
+def get_all_users(
+    skip: int = 0, 
+    limit: int = 50, 
+    search: str = None,
+    db: Session = Depends(get_db), 
+    _: bool = Depends(verify_admin)
+):
+    query = db.query(models.User)
+    if search:
+        query = query.filter(models.User.email.ilike(f"%{search}%"))
+    
+    users = query.order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()
     return users
+
+@app.get("/admin/users/{user_id}/details")
+def get_user_details(user_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    recent_analyses = db.query(models.Analysis).filter(
+        models.Analysis.user_id == user.firebase_uid
+    ).order_by(models.Analysis.created_at.desc()).limit(20).all()
+    
+    return {
+        "user": user,
+        "analyses": recent_analyses
+    }
+
+class CreditUpdate(BaseModel):
+    amount: int
+
+@app.post("/admin/users/{user_id}/credits")
+def update_user_credits(user_id: int, credit_data: CreditUpdate, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.credits_balance = credit_data.amount
+    db.commit()
+    return {"status": "success", "new_balance": user.credits_balance}
+
+@app.delete("/admin/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Optional: Delete their analyses too? Yes, for clean up.
+    db.query(models.Analysis).filter(models.Analysis.user_id == user.firebase_uid).delete()
+    db.delete(user)
+    db.commit()
+    return {"status": "success", "message": "User deleted"}
 
 @app.get("/admin/analyses")
 def get_recent_global_analyses(limit: int = 20, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    # Fetch recent analyses across ALL users
     analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(limit).all()
     return analyses
+
+# Analytics Helpers
+@app.get("/admin/analytics/usage")
+def get_usage_analytics(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    # Python-side aggregation for DB compatibility
+    thirty_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+    analyses = db.query(models.Analysis).filter(models.Analysis.created_at >= thirty_days_ago).all()
+    
+    daily_counts = {}
+    for a in analyses:
+        date_str = a.created_at.strftime("%Y-%m-%d")
+        daily_counts[date_str] = daily_counts.get(date_str, 0) + 1
+    
+    # Fill missing days? Optional.
+    data = [{"date": k, "count": v} for k,v in daily_counts.items()]
+    return sorted(data, key=lambda x: x["date"])
+
+@app.get("/admin/analytics/assets")
+def get_asset_analytics(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(500).all()
+    asset_counts = {}
+    for a in analyses:
+        asset = a.asset or "Unknown"
+        asset_counts[asset] = asset_counts.get(asset, 0) + 1
+    
+    return [{"name": k, "value": v} for k,v in asset_counts.items()]
 
 @app.post("/admin/users/{user_id}/upgrade")
 def manual_upgrade_user(user_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
