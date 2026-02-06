@@ -377,60 +377,96 @@ export default function Home() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-24 bg-background border-t border-border-subtle">
+      <section className="py-24 bg-background border-t border-border-subtle" id="pricing">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-16">Simple, Transparent Pricing</h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
 
-            {/* Tier 1: Monthly */}
-            <div className="p-8 rounded-2xl bg-surface-card border border-border-subtle flex flex-col">
-              <h3 className="text-xl font-bold text-gray-300">Monthly Pro</h3>
-              <div className="my-6">
-                <span className="text-4xl font-bold text-white">$20</span>
-                <span className="text-gray-500">/mo</span>
+            {/* Tier 1: Starter */}
+            <div className="p-8 rounded-2xl bg-surface-card border border-border-subtle flex flex-col hover:border-blue-500/30 transition-colors duration-300">
+              <h3 className="text-xl font-bold text-white mb-2">Starter</h3>
+              <p className="text-sm text-gray-400 mb-6">Short-term access for testing</p>
+
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-white">$2.99</span>
+                <span className="text-gray-500 text-sm"> / 7 Days</span>
               </div>
+
               <ul className="space-y-4 text-left flex-grow mb-8 text-gray-400 text-sm">
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Unlimited Analysis Uploads</li>
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Standard Processing Speed</li>
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Cancel Anytime</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Up to 10 uploads/day</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 7-day access</li>
               </ul>
+
               <button
-                onClick={() => handlePayment(20)}
-                className="w-full py-3 rounded-lg border border-gold/30 text-gold hover:bg-gold/10 transition-colors font-semibold"
+                onClick={() => handlePayment(2.99)}
+                className="w-full py-3 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 transition-all font-semibold"
               >
-                Get Monthly
+                Subscribe Now →
               </button>
             </div>
 
-            {/* Tier 2: Yearly */}
-            <div className="relative p-8 rounded-2xl bg-surface-card border border-gold-dark shadow-[0_0_30px_rgba(212,175,55,0.1)] flex flex-col transform md:-translate-y-4">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gold text-black text-xs font-bold px-3 py-1 rounded-full uppercase">
-                Best Value (Save 15%)
+            {/* Tier 2: Active Traders (Popular) */}
+            <div className="relative p-8 rounded-2xl bg-surface-card border-2 border-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.15)] flex flex-col transform md:-translate-y-4 z-10">
+              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                Most Popular
               </div>
-              <h3 className="text-xl font-bold text-white">Yearly Pro</h3>
-              <div className="my-6">
-                <span className="text-4xl font-bold text-gradient-gold">$204</span>
-                <span className="text-gray-500">/yr</span>
-                <p className="text-xs text-green-400 mt-2">Billed at $17/mo</p>
+
+              <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                Active Traders <span className="text-yellow-400">★</span>
+              </h3>
+              <p className="text-sm text-gray-400 mb-6">Best for consistent daily usage</p>
+
+              <div className="mb-6">
+                <span className="text-5xl font-bold text-white">$9.99</span>
+                <span className="text-gray-500 text-sm"> / 30 Days</span>
               </div>
+
               <ul className="space-y-4 text-left flex-grow mb-8 text-gray-300 text-sm">
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Unlimited Analysis Uploads</li>
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Priority Server Processing</li>
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Macro Context (DXY Correlation)</li>
-                <li className="flex items-center gap-2"><span className="text-gold">✓</span> 2 Months Free</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Up to 20 uploads/day</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 30-day access</li>
               </ul>
+
               <button
-                onClick={() => handlePayment(204)}
-                className="w-full py-3 rounded-lg bg-gold hover:bg-gold-light text-black font-bold transition-all shadow-lg shadow-gold/20"
+                onClick={() => handlePayment(9.99)}
+                className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-lg shadow-blue-900/20"
               >
-                Get Yearly Pro
+                Subscribe Now →
+              </button>
+            </div>
+
+            {/* Tier 3: Advanced Traders */}
+            <div className="p-8 rounded-2xl bg-surface-card border border-border-subtle flex flex-col hover:border-blue-500/30 transition-colors duration-300">
+              <h3 className="text-xl font-bold text-white mb-2">Advanced Traders</h3>
+              <p className="text-sm text-gray-400 mb-6">Built for power users</p>
+
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-white">$29.99</span>
+                <span className="text-gray-500 text-sm"> / 30 Days</span>
+              </div>
+
+              <ul className="space-y-4 text-left flex-grow mb-8 text-gray-400 text-sm">
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> High usage limits</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 30-day access</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Priority support</li>
+              </ul>
+
+              <button
+                onClick={() => handlePayment(29.99)}
+                className="w-full py-3 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 transition-all font-semibold"
+              >
+                Subscribe Now →
               </button>
             </div>
 
           </div>
 
-          <p className="text-center text-xs text-gray-500 mt-8">
-            **All plans use the same FarNorth Advanced AI engine and provide identical analysis output quality.
+          <p className="text-center text-xs text-gray-500 mt-12 max-w-2xl mx-auto">
+            **All plans use the same AI engine and provide identical analysis output. Plans differ only by usage limits and access duration.
+            <br />
+            Need a custom plan? Contact our Support team.
           </p>
 
         </div>
