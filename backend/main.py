@@ -349,9 +349,8 @@ async def analyze_chart(
 
     # Backfill email if missing for existing user
     if x_user_email and not user.email:
-         user.email = x_user_email
-         user.full_name = x_user_email.split('@')[0]
-         db.commit()
+        user.email = x_user_email
+        user.full_name = x_user_email.split('@')[0]
         db.add(user)
         db.commit()
         db.refresh(user)
