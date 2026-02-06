@@ -111,11 +111,14 @@ export default function UploadPage() {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
             
             // ... (fetch) ...
+            const userEmail = user.email || user.providerData?.[0]?.email || '';
+            console.log("Debug: Uploading for", user.uid, "Email:", userEmail);
+
             const response = await fetch(`${apiUrl}/analyze`, {
                 method: 'POST',
                 headers: {
                     'X-User-ID': user.uid,
-                    'X-User-Email': user.email || '',
+                    'X-User-Email': userEmail,
                 },
                 body: formData,
                 signal: controller.signal
