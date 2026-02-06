@@ -4,16 +4,22 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
+import { 
+    SentimentWidget, QuantWidget, SMCWidget,
+    QuantContext, SentimentContext, SMCContext 
+} from '@/components/dashboard/AnalysisWidgets';
 
 interface RiskManagement {
     stop_loss_pips: number;
     recommended_leverage: string;
-    lot_sizing: {
+    risk_amount_usd: number;
+    recommended_lot_size: number;
+    lot_sizing?: {
         equity_1k: string;
         equity_10k: string;
         equity_100k: string;
     };
-    management_rules: string[];
+    management_rules?: string[];
 }
 
 interface TechniqueConfluence {
@@ -35,10 +41,15 @@ interface Analysis {
     tp1?: number;
     tp2?: number;
     risk_reward?: string;
-    sentiment?: string;
+    sentiment?: string; // Legacy field
     risk_management?: RiskManagement;
     technique_confluence?: TechniqueConfluence;
     reasoning?: string;
+    
+    // Glass Box Fields
+    quant_engine?: QuantContext;
+    sentiment_engine?: SentimentContext;
+    smc_context?: SMCContext;
 }
 
 export default function AnalysisPage() {
@@ -387,7 +398,23 @@ via xGProAi
                                     })()}
                                 </div>
 
-                                {/* RISK MANAGEMENT SECTION (New) */}
+                                {/* GLASS BOX WIDGETS (New) */}
+                                {(analysis.quant_engine || analysis.sentiment_engine || analysis.smc_context) && (
+                                    <div className="mb-8 animate-fade-in delay-200">
+                                        <h3 className="text-gray-500 font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <span className="w-8 h-px bg-gray-700"></span>
+                                            Glass Box Intelligence
+                                            <span className="w-full h-px bg-gray-700"></span>
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <SentimentWidget data={analysis.sentiment_engine} />
+                                            <QuantWidget data={analysis.quant_engine} />
+                                            <SMCWidget data={analysis.smc_context} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* RISK MANAGEMENT SECTION */}
                                 {analysis.risk_management && (
                                     <div className="mb-8 border border-gold/20 bg-gold/5 rounded-xl p-6">
                                         <div className="flex items-center justify-between mb-4">
@@ -397,8 +424,21 @@ via xGProAi
                                             </h4>
                                             <span className="text-xs bg-gold text-black px-2 py-1 rounded font-bold">1% RISK MODEL</span>
                                         </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                            <div>
+                                                <p className="text-gray-400 text-xs mb-1">Recommended Position Size</p>
+                                                <p className="text-2xl font-bold text-white">{analysis.risk_management.recommended_lot_size} Lots</p>
+                                                <p className="text-gray-500 text-xs">Based on {analysis.risk_management.stop_loss_pips} pips SL</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 text-xs mb-1">Risk Amount</p>
+                                                <p className="text-xl font-bold text-red-300">-${analysis.risk_management.risk_amount_usd.toFixed(2)}</p>
+                                                <p className="text-gray-500 text-xs">If Stopped Out</p>
+                                            </div>
+                                        </div>
 
-                                        {/* Lot Sizing Grid */}
+                                        {/* Lot Sizing Grid (Checking existence of lot_sizing for safety) */}
+                                        {analysis.risk_management.lot_sizing && (
                                         <div className="grid grid-cols-3 gap-4 mb-6">
                                             <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
                                                 <p className="text-gray-400 text-[10px] uppercase mb-1">$1,000 Equity</p>
@@ -413,8 +453,10 @@ via xGProAi
                                                 <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_100k} Lots</p>
                                             </div>
                                         </div>
+                                        )}
 
                                         {/* Management Rules */}
+                                        {analysis.risk_management.management_rules && (
                                         <div className="bg-black/20 p-4 rounded-lg">
                                             <h5 className="text-xs text-gray-500 font-bold uppercase mb-3">Trade Management Rules</h5>
                                             <ul className="space-y-2">
@@ -426,10 +468,11 @@ via xGProAi
                                                 ))}
                                             </ul>
                                         </div>
+                                        )}
                                     </div>
                                 )}
 
-                                {/* INSTITUTIONAL CONFLUENCE (New) */}
+                                {/* INSTITUTIONAL CONFLUENCE */}
                                 {analysis.technique_confluence && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-auto">
                                         <div className="border border-border-subtle rounded-xl p-5 bg-black/20">
