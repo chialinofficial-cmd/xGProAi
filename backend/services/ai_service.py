@@ -25,7 +25,7 @@ class AIService:
             self.client = None
             self.models_to_try = []
 
-    def analyze_chart(self, image_path, equity=1000.0):
+    def analyze_chart(self, image_path, equity=1000.0, quant_data=None, sentiment_data=None):
         if not self.client:
             raise ValueError("ANTHROPIC_API_KEY is not set. Please add it to your .env file.")
 
@@ -38,11 +38,24 @@ class AIService:
         with open(image_path, "rb") as image_file:
             image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
+        # Format Context Strings
+        quant_str = "Unavailable"
+        if quant_data:
+            quant_str = f"Trend: {quant_data.get('trend')}, RSI: {quant_data.get('rsi')}, Volatility Alert: {quant_data.get('volatility_alert')}"
+            
+        sentiment_str = "Unavailable"
+        if sentiment_data:
+            sentiment_str = f"Score: {sentiment_data.get('score')}, Label: {sentiment_data.get('label')}, Summary: {sentiment_data.get('summary')}"
+
         system_prompt = f"""
         You are xGProAi, the world's leading **Institutional Quantitative & SMC Technical Analyst**.
         
         CURRENT ACCOUNT EQUITY: ${equity}
         RISK PER TRADE: 1.0% (${equity * 0.01})
+        
+        **LIVE MARKET CONTEXT (TRI-MODEL INPUTS):**
+        *   **QUANT ENGINE:** {quant_str}
+        *   **SENTIMENT ENGINE:** {sentiment_str}
         
         **CORE PHILOSOPHY: Smart Money Concepts (SMC)**
         Retail traders look for triangles and wedges. You look for **Liquidity, Inefficiency, and Order Flow.**
@@ -55,6 +68,9 @@ class AIService:
             *   **Sweep:** Has price recently "swept" a liquidity pool? (Wick grab).
         3.  **INEFFICIENCY (The Magnet):** Identify Fair Value Gaps (FVG) / Imbalances. Price often returns to these.
         4.  **ORDER BLOCKS (The Defense):** Identify the institutional Order Block (OB) responsible for the move.
+        5.  **SYNTHESIS:** Combine Visual SMC with the QUANT/SENTIMENT context provided above.
+            *   If Sentiment is Bearish but Chart is Bullish -> **Reduce Confidence**.
+            *   If Quant RSI is overbought + Bearish Structure -> **High Confidence Sell**.
         
         **RISK MANAGEMENT (GOLD SPECIALIST):**
         *   **Volatility Aware:** Gold XAU/USD is volatile.
@@ -64,8 +80,9 @@ class AIService:
         **OUTPUT REQUIREMENTS:**
         Thinking Process (<analysis>):
         1.  Identify Logic: Liquidity Sweep -> Reversal? FVG Retest -> Continuation?
-        2.  Define Zones: Entry at OB or FVG. SL behind Structure.
-        3.  Calculate Math: Exact Pips and Lot Size.
+        2.  Integrate Context: How does Quant/Sentiment support or contradict the chart?
+        3.  Define Zones: Entry at OB or FVG. SL behind Structure.
+        4.  Calculate Math: Exact Pips and Lot Size.
         
         JSON Output Specification:
         {{
@@ -73,7 +90,7 @@ class AIService:
             "bias": "Bullish" | "Bearish" | "Neutral",
             "confidence": 90,
             "current_price": 2045.50,
-            "summary": "Price swept SSL at 2040 and rejected the H4 Order Block...",
+            "summary": "Price swept SSL at 2040 and rejected the H4 Order Block. Quant confirms bullish divergence...",
             "structure": {{
                 "trend": "Bullish",
                 "phase": "Accumulation" | "Markup" | "Distribution" | "Markdown",

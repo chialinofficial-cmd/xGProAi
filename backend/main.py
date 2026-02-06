@@ -446,25 +446,66 @@ async def analyze_chart(
     # Pass physical path to AI Service
     file_location = physical_path
 
-    # 2. AI Analysis
+    # 2. AI Analysis & Tri-Model Orchestration
     try:
         from services.ai_service import AIService
+        from services.quant_service import QuantService
+        from services.sentiment_service import SentimentService
         
         ai_service = AIService()
+        quant_service = QuantService()
+        sentiment_service = SentimentService()
         
         if not ai_service.api_key:
              print("Error: ANTHROPIC_API_KEY not found in environment.")
-             raise HTTPException(status_code=500, detail="Configuration Error: ANTHROPIC_API_KEY is missing. Please add it to your environment variables to perform real AI analysis.")
+             raise HTTPException(status_code=500, detail="Configuration Error: ANTHROPIC_API_KEY is missing.")
 
-        print("Analyzing with Claude 3.5 Sonnet...")
+        print("Initializing Tri-Model Analysis...")
+        
+        # --- MODEL 1: SENTIMENT ENGINE ---
+        print("1. Sentiment Engine: Checking News...")
+        news_risk = sentiment_service.check_high_impact_news()
+        
+        # SAFETY SWITCH: Reject trade if High Impact News is imminent
+        if news_risk.get("risk") == "HIGH":
+            event_name = news_risk.get("event")
+            print(f"SAFETY SWITCH TRIGGERED: {event_name}")
+            raise HTTPException(status_code=400, detail=f"TRADING PAUSED: High Impact News Detected ({event_name}). System prevents entry during volatility spikes.")
+            
+        market_sentiment = sentiment_service.get_market_sentiment()
+        print(f"   Sentiment: {market_sentiment.get('label')} ({market_sentiment.get('score')})")
+
+        # --- MODEL 2: QUANT ENGINE ---
+        print("2. Quant Engine: Analyzing Structure...")
+        # Fetch OHLCV (Sync for now, can be async)
+        # Note: In async route, we should await if method is async. fetch_ohlcv is async in definition but we need to run it.
+        # Since we are in an async def, we can await.
+        df = await quant_service.fetch_ohlcv("XAU/USD")
+        quant_analysis = quant_service.analyze_market_structure(df)
+        print(f"   Quant: {quant_analysis.get('trend')} | Volatility Alert: {quant_analysis.get('volatility_alert')}")
+
+        # --- MODEL 3: VISION ENGINE (SMC) ---
+        print("3. Vision Engine: Analyzing Chart with Context...")
         
         # Measure Latency
         start_time = datetime.datetime.utcnow()
-        ai_result_json = ai_service.analyze_chart(file_location)
+        
+        # Pass Context to AI
+        ai_result_json = ai_service.analyze_chart(
+            file_location, 
+            equity=equity,
+            quant_data=quant_analysis,
+            sentiment_data=market_sentiment
+        )
+        
         end_time = datetime.datetime.utcnow()
         duration_ms = int((end_time - start_time).total_seconds() * 1000)
         
         ai_data = json.loads(ai_result_json)
+        
+        # Inject Quantitative & Sentiment Data into Final Response for Frontend
+        ai_data["quant_engine"] = quant_analysis
+        ai_data["sentiment_engine"] = market_sentiment
         
         # Map AI result to DB model
         levels = ai_data.get("levels", {})
