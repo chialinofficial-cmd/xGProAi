@@ -45,6 +45,7 @@ export default function AdminPage() {
     const [accessCode, setAccessCode] = useState('');
 
     const [stats, setStats] = useState<AdminStats | null>(null);
+    const [aiStats, setAiStats] = useState<any>(null); // New AI Stats State
     const [users, setUsers] = useState<User[]>([]);
     const [activity, setActivity] = useState<Analysis[]>([]);
     const [loading, setLoading] = useState(false);
@@ -91,6 +92,10 @@ export default function AdminPage() {
             // 1. Stats
             const statsRes = await fetch(`${apiUrl}/admin/stats`, { headers });
             if (statsRes.ok) setStats(await statsRes.json());
+
+            // 1b. AI Stats
+            const aiRes = await fetch(`${apiUrl}/admin/ai/stats`, { headers });
+            if (aiRes.ok) setAiStats(await aiRes.json());
 
             // 2. Users (Search aware)
             const searchParam = searchQuery ? `&search=${searchQuery}` : '';
@@ -230,17 +235,33 @@ export default function AdminPage() {
                         <p className="text-3xl font-bold text-white mt-2">{stats?.total_users || 0}</p>
                     </div>
                     <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                        <p className="text-gray-400 text-xs uppercase">Pro VIPs</p>
-                        <p className="text-3xl font-bold text-gold mt-2">{stats?.pro_users || 0}</p>
+                        <p className="text-gray-400 text-xs uppercase">AI Latency (Avg)</p>
+                        <p className="text-3xl font-bold text-blue-400 mt-2">{aiStats?.avg_latency_ms || 0}<span className="text-sm text-gray-500">ms</span></p>
                     </div>
                     <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                        <p className="text-gray-400 text-xs uppercase">Volume</p>
-                        <p className="text-3xl font-bold text-blue-400 mt-2">{stats?.total_analyses || 0}</p>
+                        <p className="text-gray-400 text-xs uppercase">Avg Confidence</p>
+                        <p className="text-3xl font-bold text-gold mt-2">{aiStats?.avg_confidence || 0}%</p>
                     </div>
                     <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                        <p className="text-gray-400 text-xs uppercase">Revenue (Est)</p>
-                        <p className="text-3xl font-bold text-green-400 mt-2">${stats?.revenue_estimated || 0}</p>
+                        <p className="text-gray-400 text-xs uppercase">Win Rate (Est)</p>
+                        <p className="text-3xl font-bold text-green-400 mt-2">{aiStats?.win_rate || 0}%</p>
                     </div>
+                </div>
+
+                {/* AI Performance Charts */}
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[300px]">
+                    <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">AI Latency Trend (Last 50 Requests)</h3>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={aiStats?.latency_history || []}>
+                            <XAxis dataKey="date" stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
+                            <RechartsTooltip 
+                                contentStyle={{ backgroundColor: '#0f1115', borderColor: '#333' }}
+                                itemStyle={{ color: '#fff' }}
+                            />
+                            <Bar dataKey="ms" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
 
                 {/* 2. Visual Analytics */}

@@ -18,6 +18,7 @@ class Analysis(Base):
     risk_reward = Column(String, nullable=True)
     sentiment = Column(String, nullable=True)
     user_id = Column(String, index=True) # Firebase UID
+    processing_time_ms = Column(Integer, nullable=True) # AI Latency
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class User(Base):
