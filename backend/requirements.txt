@@ -10,3 +10,7 @@ requests
 pydantic[email]
 email-validator
 psycopg2-binary
+ccxt
+pandas
+numpy
+pandas_ta
