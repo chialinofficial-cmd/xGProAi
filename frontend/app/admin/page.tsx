@@ -62,21 +62,39 @@ export default function AdminPage() {
         const headers = { 'x-admin-secret': key };
 
         try {
+            // 1. Stats
             const statsRes = await fetch(`${apiUrl}/admin/stats`, { headers });
-            const statsData = await statsRes.json();
-            setStats(statsData);
+            if (statsRes.ok) {
+                const statsData = await statsRes.json();
+                setStats(statsData);
+            }
 
+            // 2. Users
             const usersRes = await fetch(`${apiUrl}/admin/users?limit=20`, { headers });
-            const usersData = await usersRes.json();
-            setUsers(usersData);
+            if (usersRes.ok) {
+                const usersData = await usersRes.json();
+                if (Array.isArray(usersData)) {
+                    setUsers(usersData);
+                } else {
+                    console.error("Users API returned non-array:", usersData);
+                    setUsers([]);
+                }
+            }
 
+            // 3. Activity
             const actRes = await fetch(`${apiUrl}/admin/analyses`, { headers });
-            const actData = await actRes.json();
-            setActivity(actData);
+            if (actRes.ok) {
+                const actData = await actRes.json();
+                if (Array.isArray(actData)) {
+                    setActivity(actData);
+                } else {
+                    console.error("Activity API returned non-array:", actData);
+                    setActivity([]);
+                }
+            }
 
         } catch (e) {
-            console.error(e);
-            alert("Failed to load admin data");
+            console.error("Fetch Error:", e);
         } finally {
             setLoading(false);
         }
@@ -223,7 +241,7 @@ export default function AdminPage() {
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className={`text-xs px-2 py-0.5 rounded ${a.bias === 'Bullish' ? 'bg-green-500/20 text-green-400' :
-                                                a.bias === 'Bearish' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
+                                            a.bias === 'Bearish' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
                                             }`}>
                                             {a.bias}
                                         </span>
