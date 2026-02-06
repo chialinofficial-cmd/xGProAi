@@ -15,8 +15,49 @@ export default function UploadPage() {
     const { handlePayment } = usePayment();
     const [isLimitReached, setIsLimitReached] = useState(false);
     const [equity, setEquity] = useState<string>('1000');
+    const [isDragging, setIsDragging] = useState(false);
 
-    // ... (keep existing simple functions)
+    // Drag Actions
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            await uploadFile(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            await uploadFile(file);
+        }
+    };
+
+    // Paste Action
+    useEffect(() => {
+        const handlePaste = async (e: ClipboardEvent) => {
+            if (e.clipboardData && e.clipboardData.files.length > 0) {
+                const file = e.clipboardData.files[0];
+                if (file.type.startsWith('image/')) {
+                    e.preventDefault();
+                    await uploadFile(file);
+                }
+            }
+        };
+
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [user]);
 
     const uploadFile = async (file: File) => {
         if (!user) {
