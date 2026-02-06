@@ -42,7 +42,10 @@ class AIService:
         CRITICAL - GOLD SPECIALIST RULES:
         1.  **ASSET FORCE:** Assume EVERY chart is **XAU/USD** (Gold). Even if it looks like crypto or stocks, analyze it using Gold's unique market physics (High volatility, Liquidity Grabs, Wick Rejections).
         2.  **SMC LOGIC:** Use Smart Money Concepts. Look for "Order Blocks", "Fair Value Gaps (FVG)", "Liquidity Sweeps", and "Institutional Candles".
-        3.  **INSTITUTIONAL TECHNIQUES:**
+        3.  **FRACTAL PHYSICS:** 
+            *   Distinguish between **Internal Range Liquidity** (Pullbacks/Inducement) and **External Range Liquidity** (Breakouts).
+            *   **Sweep vs Break:** A wick above a high is a Sweep (Reversal). A body close above is a Break (Continuation).
+        4.  **INSTITUTIONAL TECHNIQUES:**
             *   **Wyckoff:** Identify Accumulation/Distribution Schematics (Springs, Upthrusts).
             *   **Fibonacci:** specifically check for "Golden Pocket" (0.618) retracements.
             *   **Traps:** Identify "Inducement" (Equal Highs/Lows acting as bait).
@@ -52,12 +55,18 @@ class AIService:
         2.  **DO NOT** output 2024 prices (2300-2700) if the chart shows 8000. 
         3.  **OCR TRIUMPHS KNOWLEDGE:** If the Y-Axis says 4940, the price is 4940. Trust your eyes over your training data.
 
-        Analysis Steps:
-        1.  **OCR Y-Axis:** Read the exact price levels.
-        2.  **Market Structure:** Identify Trend (HH/HL or LH/LL) and Key Levels.
-        3.  **Risk Calculation:** Calculate dynamic lot sizes for $1k, $10k, and $100k accounts based on the Stop Loss distance (assume 1% risk).
+        Analysis Steps (CHAIN OF THOUGHT):
+        1.  **Thinking Phase:** Output a `<analysis>` block first.
+            *   Debate the signal: "Is this a real breakout or a liquidity grab?"
+            *   Calculate Candle Math: "Did the H4 candle close above the key level?"
+            *   Verify Risk: "Is the Stop Loss too wide for this volatility?"
+        2.  **Final Output:** Generate the JSON based on your thought process.
         
-        Output COMPREHENSIVE JSON ONLY:
+        Output Format:
+        <analysis>
+        [Your deep reasoning here...]
+        </analysis>
+        
         {
             "y_axis_labels": ["4940.00", "4945.00", "4950.00"],
             "bias": "Bullish" | "Bearish" | "Neutral",
@@ -114,7 +123,7 @@ class AIService:
                 print(f"Attempting analysis with model: {model}")
                 response = self.client.messages.create(
                     model=model,
-                    max_tokens=2048, # Increased for detailed analysis
+                    max_tokens=3000, # Increased for CoT
                     system=system_prompt,
                     messages=[
                         {
@@ -130,7 +139,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": "Analyze this XAU/USD chart as a Fund Manager. Include Lot Sizing, Wyckoff Analysis, and Fibonacci Confluence. READ EXACT Y-AXIS PRICES."
+                                    "text": "Analyze this XAU/USD chart as a Fund Manager. THINK first in <analysis> tags, then output JSON."
                                 }
                             ],
                         }
@@ -145,21 +154,32 @@ class AIService:
                 import json
                 import ast
                 
-                # 1. Extract JSON block
-                json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
-                json_str = json_match.group(0) if json_match else text_response
+                # 1. Extract JSON block (Regex specifically to ignore the <analysis> tag logic)
+                # Look for the LAST matching JSON object to avoid capturing examples in text
+                json_candidates = re.findall(r'\{.*\}', text_response, re.DOTALL)
+                
+                # Extract Analysis Block (Chain of Thought)
+                analysis_match = re.search(r'<analysis>(.*?)</analysis>', text_response, re.DOTALL)
+                analysis_reasoning = analysis_match.group(1).strip() if analysis_match else "Reasoning not provided."
+
+                if json_candidates:
+                    json_str = json_candidates[-1] # Take the last one, usually the final output
+                else:
+                    json_str = text_response
                 
                 # 2. Repair common LLM syntax errors
                 json_str = json_str.replace("```json", "").replace("```", "").strip()
                 
                 try:
-                    # Attempt standard JSON parse
                     data = json.loads(json_str)
+                    # Inject reasoning into the data object
+                    data['reasoning'] = analysis_reasoning
                 except json.JSONDecodeError:
                     # Fallback: Try parsing as Python dictionary
                     try:
                         py_dict = ast.literal_eval(json_str)
                         data = py_dict # Start working with dict
+                        data['reasoning'] = analysis_reasoning
                         json_str = json.dumps(py_dict) # Update string for return
                     except (ValueError, SyntaxError):
                         # Last resort: Regex cleanup
@@ -170,6 +190,8 @@ class AIService:
                         try:
                              data = json.loads(json_str)
                         except:
+                             # If we have the <analysis> but failed JSON, log it
+                             print(f"Analysis CoT captured but JSON failed: {text_response[:200]}...")
                              raise Exception("Failed to parse AI response")
 
                 # 3. Post-Processing: Hallucination Check & SMC Validation

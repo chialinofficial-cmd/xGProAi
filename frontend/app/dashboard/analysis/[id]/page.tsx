@@ -37,6 +37,7 @@ interface Analysis {
     sentiment?: string;
     risk_management?: RiskManagement;
     technique_confluence?: TechniqueConfluence;
+    reasoning?: string;
 }
 
 export default function AnalysisPage() {
