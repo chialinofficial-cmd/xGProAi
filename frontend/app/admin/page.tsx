@@ -35,6 +35,7 @@ export default function AdminPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [activity, setActivity] = useState<Analysis[]>([]);
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
 
     // Simple Auth Check
     const checkAuth = () => {
@@ -58,6 +59,7 @@ export default function AdminPage() {
 
     const fetchData = async (key: string) => {
         setLoading(true);
+        setErrorMsg('');
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const headers = { 'x-admin-secret': key };
 
@@ -67,6 +69,8 @@ export default function AdminPage() {
             if (statsRes.ok) {
                 const statsData = await statsRes.json();
                 setStats(statsData);
+            } else {
+                throw new Error(`Stats API Error: ${statsRes.status} ${statsRes.statusText}`);
             }
 
             // 2. Users
@@ -79,6 +83,8 @@ export default function AdminPage() {
                     console.error("Users API returned non-array:", usersData);
                     setUsers([]);
                 }
+            } else {
+                console.warn(`Users API Error: ${usersRes.status}`);
             }
 
             // 3. Activity
@@ -91,10 +97,13 @@ export default function AdminPage() {
                     console.error("Activity API returned non-array:", actData);
                     setActivity([]);
                 }
+            } else {
+                console.warn(`Activity API Error: ${actRes.status}`);
             }
 
-        } catch (e) {
+        } catch (e: any) {
             console.error("Fetch Error:", e);
+            setErrorMsg(e.message || "Failed to connect to server");
         } finally {
             setLoading(false);
         }
