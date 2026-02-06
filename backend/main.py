@@ -657,21 +657,44 @@ def get_asset_analytics(db: Session = Depends(get_db), _: bool = Depends(verify_
     
     return [{"name": k, "value": v} for k,v in asset_counts.items()]
 
-@app.post("/admin/users/{user_id}/upgrade")
-def manual_upgrade_user(user_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+class TierUpdate(BaseModel):
+    tier: str
+
+class TrialExtension(BaseModel):
+    days: int
+
+@app.post("/admin/users/{user_id}/tier")
+def update_user_tier(user_id: int, tier_data: TierUpdate, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Grant Pro for 30 days
-    user.plan_tier = "pro"
-    user.credits_balance = 999999
+    user.plan_tier = tier_data.tier
+    # Reset usage to let them use new limits immediately
+    user.daily_usage_count = 0
+    
+    # If upgrading to paid, ensure subscription is active
+    if tier_data.tier in ["starter", "active", "advanced", "pro"]:
+        now = datetime.datetime.utcnow()
+        if not user.subscription_ends_at or user.subscription_ends_at < now:
+             user.subscription_ends_at = now + datetime.timedelta(days=30)
+             
+    db.commit()
+    return {"status": "success", "message": f"User upgraded to {tier_data.tier}"}
+
+@app.post("/admin/users/{user_id}/extend-trial")
+def extend_user_trial(user_id: int, extension: TrialExtension, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     
     now = datetime.datetime.utcnow()
-    if user.subscription_ends_at and user.subscription_ends_at > now:
-        user.subscription_ends_at += datetime.timedelta(days=30)
-    else:
-        user.subscription_ends_at = now + datetime.timedelta(days=30)
+    current_expiry = user.trial_ends_at or now
+    if current_expiry < now:
+        current_expiry = now
         
+    user.trial_ends_at = current_expiry + datetime.timedelta(days=extension.days)
+    user.credits_balance += 3 # Give them some credits to use with the time
+    
     db.commit()
-    return {"status": "success", "message": f"User {user.email} upgraded to Pro"}
+    return {"status": "success", "new_expiry": user.trial_ends_at}
