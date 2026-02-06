@@ -249,6 +249,47 @@ class AIService:
 
                         except Exception as e:
                             print(f"Error during hallucination fix: {e}")
+
+                    # 4. UNIVERSAL LOGIC VALIDATION (Sanity Check)
+                    # This runs regardless of hallucination check to catch minor logic errors
+                    try:
+                        bias = data.get("bias", "Neutral")
+                        levels = data.get("levels", {})
+                        entry = niveles_float = float(str(levels.get("entry", 0)).replace(",", ""))
+                        sl = float(str(levels.get("sl", 0)).replace(",", ""))
+                        tp1 = float(str(levels.get("tp1", 0)).replace(",", ""))
+                        
+                        is_bullish = "Bullish" in bias
+                        is_bearish = "Bearish" in bias
+                        
+                        points_sl = 6.0 # Default fallback
+                        points_tp = 12.0
+
+                        if is_bullish:
+                            # Rule: SL < Entry < TP
+                            if sl >= entry:
+                                print(f"Logic Fix (Bullish): SL {sl} >= Entry {entry}. Resetting SL.")
+                                levels["sl"] = round(entry - points_sl, 2)
+                            if tp1 <= entry:
+                                print(f"Logic Fix (Bullish): TP {tp1} <= Entry {entry}. Resetting TP.")
+                                levels["tp1"] = round(entry + points_tp, 2)
+                                levels["tp2"] = round(entry + (points_tp * 1.5), 2)
+
+                        elif is_bearish:
+                            # Rule: TP < Entry < SL
+                            if sl <= entry:
+                                print(f"Logic Fix (Bearish): SL {sl} <= Entry {entry}. Resetting SL.")
+                                levels["sl"] = round(entry + points_sl, 2)
+                            if tp1 >= entry:
+                                print(f"Logic Fix (Bearish): TP {tp1} >= Entry {entry}. Resetting TP.")
+                                levels["tp1"] = round(entry - points_tp, 2)
+                                levels["tp2"] = round(entry - (points_tp * 1.5), 2)
+                        
+                        data["levels"] = levels
+                        json_str = json.dumps(data)
+                        
+                    except Exception as logic_err:
+                        print(f"Logic validation error: {logic_err}")
                             
                 except Exception as parse_err:
                     print(f"Post-processing warning: {parse_err}")

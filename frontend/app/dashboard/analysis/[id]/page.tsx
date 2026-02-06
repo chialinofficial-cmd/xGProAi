@@ -313,45 +313,63 @@ via xGProAi
                             <div className="p-6 h-full flex flex-col animate-fade-in overflow-y-auto max-h-[700px]">
                                 <h3 className="text-xl font-bold text-white mb-6">Trade Execution Plan</h3>
 
-                                {/* Visual Range Bar */}
-                                <div className="mb-10 relative mt-4">
-                                    <div className="h-4 bg-gray-800 rounded-full w-full relative">
-                                        {/* Range Line */}
-                                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-700 -z-10"></div>
+                                {/* Visual Range Bar (Dynamic Calculation) */}
+                                <div className="mb-10 relative mt-8">
+                                    {(() => {
+                                        // Calculate range min/max to normalize positions
+                                        const vals = [slPrice, currentPrice, tp1Price, tp2Price].map(v => Number(v) || 0).filter(v => v > 0);
+                                        const minVal = Math.min(...vals);
+                                        const maxVal = Math.max(...vals);
+                                        const range = maxVal - minVal || 1; // Avoid divide by zero
 
-                                        {/* Points - Scaled 0% - 100% just for visual layout (0, 40, 70, 90) */}
-                                        <div className="absolute top-1/2 left-[10%] -translate-y-1/2 flex flex-col items-center">
-                                            <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-surface-card shadow"></div>
-                                            <div className="mt-2 text-center">
-                                                <span className="text-red-400 font-bold text-xs">SL</span>
-                                                <p className="text-white font-mono text-xs">{slPrice}</p>
-                                            </div>
-                                        </div>
+                                        const getPos = (val: number) => {
+                                            const p = ((val - minVal) / range) * 100;
+                                            return Math.min(Math.max(p, 0), 100); // Clamp 0-100
+                                        };
 
-                                        <div className="absolute top-1/2 left-[40%] -translate-y-1/2 flex flex-col items-center">
-                                            <div className="w-5 h-5 bg-blue-500 rounded-full border-2 border-surface-card shadow ring-4 ring-blue-500/20"></div>
-                                            <div className="mb-8 text-center bg-blue-500/10 px-2 py-1 rounded">
-                                                <span className="text-blue-400 font-bold text-xs uppercase block">Entry</span>
-                                                <p className="text-white font-mono text-xs">{currentPrice}</p>
-                                            </div>
-                                        </div>
+                                        return (
+                                            <div className="h-4 bg-gray-800 rounded-full w-full relative mx-4 max-w-[90%]">
+                                                {/* Connecting Line */}
+                                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-700 -z-10"></div>
 
-                                        <div className="absolute top-1/2 left-[70%] -translate-y-1/2 flex flex-col items-center">
-                                            <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-surface-card shadow"></div>
-                                            <div className="mt-2 text-center">
-                                                <span className="text-green-400 font-bold text-xs">TP1</span>
-                                                <p className="text-white font-mono text-xs">{tp1Price}</p>
-                                            </div>
-                                        </div>
+                                                {/* Stop Loss (Red) */}
+                                                <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-500" style={{ left: `${getPos(slPrice)}%` }}>
+                                                    <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-surface-card shadow hover:scale-125 transition-transform" />
+                                                    <div className="mt-2 text-center absolute top-4 w-20 -left-8">
+                                                        <span className="text-red-400 font-bold text-[10px] block">SL</span>
+                                                        <p className="text-white font-mono text-[10px]">{slPrice}</p>
+                                                    </div>
+                                                </div>
 
-                                        <div className="absolute top-1/2 left-[90%] -translate-y-1/2 flex flex-col items-center">
-                                            <div className="w-4 h-4 bg-green-400 rounded-full border-2 border-surface-card shadow opacity-70"></div>
-                                            <div className="mt-2 text-center opacity-70">
-                                                <span className="text-green-400 font-bold text-xs">TP2</span>
-                                                <p className="text-white font-mono text-xs">{tp2Price}</p>
+                                                {/* Entry (Blue) */}
+                                                <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-10 transition-all duration-500" style={{ left: `${getPos(currentPrice)}%` }}>
+                                                    <div className="w-5 h-5 bg-blue-500 rounded-full border-2 border-surface-card shadow ring-4 ring-blue-500/20 hover:scale-125 transition-transform" />
+                                                    <div className="mb-8 text-center bg-blue-500/10 px-2 py-1 rounded absolute bottom-4 whitespace-nowrap">
+                                                        <span className="text-blue-400 font-bold text-[10px] uppercase block">Entry</span>
+                                                        <p className="text-white font-mono text-xs">{currentPrice}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* TP1 (Green) */}
+                                                <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-500" style={{ left: `${getPos(tp1Price)}%` }}>
+                                                    <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-surface-card shadow hover:scale-125 transition-transform" />
+                                                    <div className="mt-2 text-center absolute top-4 w-20 -left-8">
+                                                        <span className="text-green-400 font-bold text-[10px] block">TP1</span>
+                                                        <p className="text-white font-mono text-[10px]">{tp1Price}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* TP2 (Green Faded) */}
+                                                <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-500" style={{ left: `${getPos(tp2Price)}%` }}>
+                                                    <div className="w-3 h-3 bg-green-400/50 rounded-full border border-surface-card shadow hover:scale-125 transition-transform" />
+                                                    <div className="mt-8 text-center absolute top-4 w-20 -left-8 opacity-60">
+                                                        <span className="text-green-400 font-bold text-[10px] block">TP2</span>
+                                                        <p className="text-white font-mono text-[10px]">{tp2Price}</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* RISK MANAGEMENT SECTION (New) */}
