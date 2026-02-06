@@ -277,10 +277,9 @@ export default function AdminPage() {
                     <tbody>
                         {users.map(u => (
                             <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
-                                <td className="px-4 py-3">
-                                    <div className="font-bold text-white text-base">{u.full_name || 'Trader'}</div>
-                                    <div className="text-sm text-gray-400">{u.email}</div>
-                                    <div className="text-[10px] text-gray-600 font-mono">ID: {u.id}</div>
+                                    <div className="font-bold text-white text-base mb-0.5">{u.full_name || 'Trader'}</div>
+                                    <div className="text-sm text-gray-300 font-medium mb-0.5">{u.email || '(No Email)'}</div>
+                                    <div className="text-[10px] text-gray-500 font-mono">ID: {u.id} • {new Date(u.created_at).toLocaleDateString()}</div>
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded text-xs ${u.plan_tier === 'pro' ? 'bg-gold/20 text-gold' : 'bg-gray-800 text-gray-400'}`}>{u.plan_tier.toUpperCase()}</span>
