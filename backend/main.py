@@ -322,7 +322,8 @@ async def analyze_chart(
     file: UploadFile = File(...), 
     equity: float = Form(1000.0), # New input
     db: Session = Depends(get_db),
-    x_user_id: str = Header(None)
+    x_user_id: str = Header(None),
+    x_user_email: str = Header(None) # Capture email
 ):
     if not x_user_id:
         raise HTTPException(status_code=400, detail="User ID required")
@@ -331,16 +332,26 @@ async def analyze_chart(
     user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
     
     # If user doesn't exist in DB yet, create them (lazy sync)
-    # If user doesn't exist in DB yet, create them (lazy sync)
     if not user:
         # 3-Day Free Trial
         trial_expiry = datetime.datetime.utcnow() + datetime.timedelta(days=3)
         user = models.User(
-            firebase_uid=x_user_id, 
+            firebase_uid=x_user_id,
+            email=x_user_email, # Save Email
+            full_name=x_user_email.split('@')[0] if x_user_email else "Trader",
             plan_tier="trial",
             credits_balance=10,
             trial_ends_at=trial_expiry
         )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # Backfill email if missing for existing user
+    if x_user_email and not user.email:
+         user.email = x_user_email
+         user.full_name = x_user_email.split('@')[0]
+         db.commit()
         db.add(user)
         db.commit()
         db.refresh(user)

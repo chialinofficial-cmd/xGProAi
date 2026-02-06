@@ -115,6 +115,7 @@ export default function UploadPage() {
                 method: 'POST',
                 headers: {
                     'X-User-ID': user.uid,
+                    'X-User-Email': user.email || '',
                 },
                 body: formData,
                 signal: controller.signal
