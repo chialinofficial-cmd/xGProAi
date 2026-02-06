@@ -291,6 +291,23 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 def health_check():
     return {"status": "ok", "service": "xGProAi Backend (Online)"}
 
+@app.get("/fix-db")
+def fix_database_schema(db: Session = Depends(get_db)):
+    """
+    WARNING: This resets the database schema.
+    Use this to apply model changes (e.g. adding new columns).
+    """
+    try:
+        # Avoid circular imports by importing models inside function
+        import models
+        from database import engine
+        
+        models.Base.metadata.drop_all(bind=engine)
+        models.Base.metadata.create_all(bind=engine)
+        return {"status": "success", "message": "Database schema reset successfully. All data cleared."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Schema reset failed: {str(e)}")
+
 @app.post("/upload")
 def upload_chart(file: UploadFile = File(...)):
     # Save file locally
