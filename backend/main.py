@@ -39,7 +39,16 @@ app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 # ... (rest of code)
 
 # Paystack
-# ...
+@app.post("/paystack/initialize")
+async def initialize_paystack(payload: dict, x_user_id: str = Header(None)):
+    if not x_user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+        
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json"
+    }
+
     try:
         response = requests.post("https://api.paystack.co/transaction/initialize", json=payload, headers=headers)
         res_data = response.json()

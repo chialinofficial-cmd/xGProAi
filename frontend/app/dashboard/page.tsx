@@ -15,6 +15,7 @@ export default function DashboardHome() {
         credits_remaining: 10,
         plan_tier: 'trial'
     });
+    const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
