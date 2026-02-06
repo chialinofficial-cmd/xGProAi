@@ -169,7 +169,7 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
         metadata = data.get("metadata", {})
         
         user_id = metadata.get("user_id")
-        plan_tier = metadata.get("plan_tier")
+        plan_tier = metadata.get("plan_tier") or "active" # Default fallback
         
         if user_id:
             user = db.query(models.User).filter(models.User.firebase_uid == user_id).first()
@@ -184,17 +184,21 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
                 elif plan_tier == "yearly":
                     days_to_add = 365
                 else:
-                    days_to_add = 30 # Default safety fallback
+                    days_to_add = 30 # Default
                 
                 if user.subscription_ends_at and user.subscription_ends_at > now:
                      user.subscription_ends_at += datetime.timedelta(days=days_to_add)
                 else:
                      user.subscription_ends_at = now + datetime.timedelta(days=days_to_add)
                 
-                user.plan_tier = "pro" # Grant 'pro' status access for all paid tiers
-                user.credits_balance = 999999 
+                # Save specific tier instead of generic 'pro'
+                user.plan_tier = plan_tier 
+                
+                # Credits are now managed by daily limits, but we can give a high number for legacy compatibility
+                user.credits_balance = 999 
+                
                 db.commit()
-                print(f"Paystack Success: {user_id} upgraded to Pro ({plan_tier}) for {days_to_add} days")
+                print(f"Paystack Success: {user_id} upgraded to {plan_tier} for {days_to_add} days")
                 
     return {"status": "success"}
 
@@ -326,36 +330,73 @@ async def analyze_chart(
 
     # 1. ACCESS CONTROL LOGIC
     allow_analysis = False
+    daily_limit = 0
     
-    # Check Pro Status
-    if user.plan_tier == "pro":
+    # Lazy Daily Reset
+    today = datetime.datetime.utcnow().date()
+    last_usage = user.last_usage_date.date() if user.last_usage_date else None
+    
+    if last_usage != today:
+        user.daily_usage_count = 0
+        user.last_usage_date = datetime.datetime.utcnow()
+        db.commit()
+
+    # Determine Limits based on Tier
+    if user.plan_tier in ["starter"]:
+        daily_limit = 10
+    elif user.plan_tier in ["active", "pro", "monthly"]: # 'pro'/monthly fallback for legacy
+        daily_limit = 20
+    elif user.plan_tier in ["advanced", "yearly"]:
+        daily_limit = 100
+    elif user.plan_tier == "trial":
+        daily_limit = 3 # Hard outcome limit for trial (Total, not daily actually)
+    
+    # Check Subscription Expiry
+    is_subscription_active = False
+    if user.plan_tier != "trial" and user.plan_tier != "free":
         if user.subscription_ends_at and user.subscription_ends_at > datetime.datetime.utcnow():
-            allow_analysis = True
+            is_subscription_active = True
         else:
-            # Subscription expired, downgrade to expired trial
+            # Expired
             user.plan_tier = "free"
             db.commit()
             raise HTTPException(status_code=403, detail="Subscription expired. Please renew.")
-            
-    # Check Trial Status
+    
+    # Logic Execution
+    if is_subscription_active:
+        # Check Daily Limit
+        if user.daily_usage_count >= daily_limit:
+             raise HTTPException(status_code=403, detail=f"Daily limit reached ({daily_limit} uploads/day). Please upgrade for more.")
+        
+        user.daily_usage_count += 1
+        user.last_usage_date = datetime.datetime.utcnow()
+        allow_analysis = True
+        db.commit()
+        
     elif user.plan_tier == "trial":
+        # Trial is TOTAL limit, not daily
+        if user.credits_balance <= 0 or user.credits_balance > 3: # Enforce 3 max if manually changed
+             # Double check if 10 was old default
+             if user.credits_balance > 3 and user.credits_balance == 10:
+                 user.credits_balance = 3
+                 db.commit()
+        
+        if user.credits_balance <= 0:
+             raise HTTPException(status_code=403, detail="Free trial limit reached (3 uploads). Please upgrade.")
+             
         now = datetime.datetime.utcnow()
         if user.trial_ends_at and now > user.trial_ends_at:
              user.plan_tier = "free"
              db.commit()
-             raise HTTPException(status_code=403, detail="Free trial expired (3 days ended). Please upgrade to Pro.")
-        
-        if user.credits_balance <= 0:
-             raise HTTPException(status_code=403, detail="Trial credits exhausted (10/10 used). Please upgrade to Pro.")
-             
-        # Deduct Credit if Trial
+             raise HTTPException(status_code=403, detail="Free trial time expired. Please upgrade.")
+
         user.credits_balance -= 1
         allow_analysis = True
-        db.commit() # Save deduction
+        db.commit()
         
     else:
-        # Free Tier (Expired Trial)
-        raise HTTPException(status_code=403, detail="Trial expired. Please upgrade to Pro for unlimited access.")
+        # Free Tier (Expired)
+        raise HTTPException(status_code=403, detail="Trial expired. Please upgrade to Pro.")
 
     if not allow_analysis:
          raise HTTPException(status_code=403, detail="Access denied.")
