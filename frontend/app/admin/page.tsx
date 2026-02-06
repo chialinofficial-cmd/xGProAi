@@ -266,29 +266,62 @@ export default function AdminPage() {
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm text-gray-400">
-                    <thead className="bg-black/20 text-xs uppercase font-medium">
+                    <thead className="bg-white/5 text-xs uppercase font-medium text-gray-400">
                         <tr>
-                            <th className="px-4 py-3">User</th>
-                            <th className="px-4 py-3">Plan</th>
-                            <th className="px-4 py-3">Credits</th>
-                            <th className="px-4 py-3 text-right">Actions</th>
+                            <th className="px-6 py-4">User</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4">Credits</th>
+                            <th className="px-6 py-4">Joined</th>
+                            <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-white/5">
                         {users.map(u => (
-                            <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
-                                <td className="px-4 py-3">
-                                    <div className="font-bold text-white text-base mb-0.5">{u.full_name || 'Trader'}</div>
-                                    <div className="text-sm text-gray-300 font-medium mb-0.5">{u.email || '(No Email)'}</div>
-                                    <div className="text-[10px] text-gray-500 font-mono">ID: {u.id} • {new Date(u.created_at).toLocaleDateString()}</div>
+                            <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border border-white/10 flex items-center justify-center text-white font-bold text-sm">
+                                            {(u.full_name?.[0] || u.email?.[0] || 'T').toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-white mb-0.5">{u.full_name || 'Trader'}</div>
+                                            <div className="text-xs text-gray-400">{u.email || 'No Email'}</div>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded text-xs ${u.plan_tier === 'pro' ? 'bg-gold/20 text-gold' : 'bg-gray-800 text-gray-400'}`}>{u.plan_tier.toUpperCase()}</span>
+                                <td className="px-6 py-4">
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider 
+                                        ${u.plan_tier === 'pro' || u.plan_tier === 'active' || u.plan_tier === 'advanced' ? 'bg-gold/10 text-gold border border-gold/20' : 
+                                          u.plan_tier === 'trial' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
+                                          'bg-white/5 text-gray-400 border border-white/10'}`}>
+                                        {u.plan_tier}
+                                    </span>
                                 </td>
-                                <td className="px-4 py-3 text-white font-mono">{u.credits_balance}</td>
-                                <td className="px-4 py-3 text-right space-x-2">
-                                    <button onClick={() => openCreditModal(u)} className="text-xs text-blue-400 hover:underline">Details</button>
-                                    <button onClick={() => handleDelete(u.id)} className="text-xs text-red-500 hover:text-red-400">Trash</button>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className={`w-2 h-2 rounded-full ${u.credits_balance > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                        <span className="text-white font-mono">{u.credits_balance}</span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 text-xs font-mono">
+                                    {new Date(u.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <div className="flex justify-end gap-2">
+                                        <button 
+                                            onClick={() => openCreditModal(u)} 
+                                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-xs text-white rounded-lg border border-white/10 transition-colors"
+                                        >
+                                            Manage
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(u.id)} 
+                                            className="p-1.5 text-gray-500 hover:text-red-400 transition-colors"
+                                            title="Delete User"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
