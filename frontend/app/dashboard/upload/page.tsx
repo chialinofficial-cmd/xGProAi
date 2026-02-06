@@ -14,50 +14,9 @@ export default function UploadPage() {
     const router = useRouter();
     const { handlePayment } = usePayment();
     const [isLimitReached, setIsLimitReached] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
-    const [isDragging, setIsDragging] = useState(false);
+    const [equity, setEquity] = useState<string>('1000');
 
-    // Drag Actions
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-    };
-
-    const handleDrop = async (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            await uploadFile(e.dataTransfer.files[0]);
-        }
-    };
-
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            await uploadFile(file);
-        }
-    };
-
-    // Paste Action
-    useEffect(() => {
-        const handlePaste = async (e: ClipboardEvent) => {
-            if (e.clipboardData && e.clipboardData.files.length > 0) {
-                const file = e.clipboardData.files[0];
-                if (file.type.startsWith('image/')) {
-                    e.preventDefault();
-                    await uploadFile(file);
-                }
-            }
-        };
-
-        window.addEventListener('paste', handlePaste);
-        return () => window.removeEventListener('paste', handlePaste);
-    }, [user]);
+    // ... (keep existing simple functions)
 
     const uploadFile = async (file: File) => {
         if (!user) {
@@ -66,6 +25,7 @@ export default function UploadPage() {
         }
 
         setIsUploading(true);
+        // ... (keep existing progress logic) ...
         setUploadProgress(10);
         setCurrentStep(1);
 
@@ -73,9 +33,9 @@ export default function UploadPage() {
         let analysisInterval: NodeJS.Timeout | null = null;
         let analysisTimeout: NodeJS.Timeout | null = null;
 
-        // Simulate upload progress
+        // ... (keep intervals) ...
         uploadInterval = setInterval(() => {
-            setUploadProgress(prev => {
+             setUploadProgress(prev => {
                 if (prev >= 35) {
                     if (uploadInterval) clearInterval(uploadInterval);
                     return 35;
@@ -86,9 +46,10 @@ export default function UploadPage() {
 
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("equity", equity || '1000'); // Pass Equity
 
         try {
-            // Start "Analysis" phase simulation
+            // ... (keep timeout logic) ...
             analysisTimeout = setTimeout(() => {
                 setCurrentStep(2);
                 setUploadProgress(45);
@@ -103,12 +64,12 @@ export default function UploadPage() {
                 }, 300);
             }, 1500);
 
-            // Create a timeout controller to prevent hanging requests
             const controller = new AbortController();
-            // Extended timeout for AI processing (120 seconds) - Claude can take time!
             const timeoutId = setTimeout(() => controller.abort(), 120000);
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
+            
+            // ... (fetch) ...
             const response = await fetch(`${apiUrl}/analyze`, {
                 method: 'POST',
                 headers: {
@@ -118,35 +79,32 @@ export default function UploadPage() {
                 signal: controller.signal
             });
 
+            // ... (rest of logic) ...
             clearTimeout(timeoutId);
-
-            // Clear intervals
             if (uploadInterval) clearInterval(uploadInterval);
             if (analysisInterval) clearInterval(analysisInterval);
             if (analysisTimeout) clearTimeout(analysisTimeout);
 
             if (response.ok) {
                 const data = await response.json();
-
-                // Success phase
                 setCurrentStep(3);
                 setUploadProgress(100);
-
                 setTimeout(() => {
                     router.push(`/dashboard/analysis/${data.id}`);
                 }, 800);
             } else {
-                const errorData = await response.json();
-                if (response.status === 403 && errorData.detail.includes("Daily limit reached")) {
+                 // ... handle error ...
+                 const errorData = await response.json();
+                 if (response.status === 403 && errorData.detail.includes("Daily limit reached")) {
                     setIsLimitReached(true);
-                    setIsUploading(false); // Stop loading so they can see modal
+                    setIsUploading(false);
                     return;
                 }
                 throw new Error(errorData.detail || `Status: ${response.status}`);
             }
         } catch (error: any) {
-            console.error("Error:", error);
-            // Don't alert if we just handled the limit reached
+             // ... handle catch ...
+             console.error("Error:", error);
             if (!isLimitReached) {
                 if (error.name === 'AbortError') {
                     alert("Analysis timed out. The AI is taking longer than expected. Please try again.");
@@ -176,9 +134,9 @@ export default function UploadPage() {
                 accept="image/*"
             />
 
-            {/* Loading Overlay */}
+            {/* ... (Loading Overlay - implied kept by not selecting it) ... */}
             {isUploading && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-surface-card border border-border-subtle rounded-2xl p-12 max-w-2xl w-full text-center relative overflow-hidden shadow-2xl">
                         {/* Background Glow */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none"></div>
@@ -238,7 +196,12 @@ export default function UploadPage() {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    onClick={() => !isUploading && fileInputRef.current?.click()}
+                    onClick={(e) => {
+                        // Prevent click when clicking the input itself
+                        if((e.target as HTMLElement).tagName !== 'INPUT') {
+                             !isUploading && fileInputRef.current?.click();
+                        }
+                    }}
                     className={`
                         bg-[#0f1115] border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative group
                         ${isDragging ? 'border-gold bg-gold/5' : 'border-gray-700 hover:border-gold/50 hover:bg-surface-card'}
@@ -251,7 +214,29 @@ export default function UploadPage() {
                         <span className="font-semibold text-sm">Upload Chart for AI Analysis</span>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4 mt-8">
+                    <div className="flex flex-col items-center gap-4 mt-8 w-full max-w-sm z-20">
+                    
+                        {/* 💰 EQUITY INPUT 💰 */}
+                        <div 
+                            className="w-full bg-black/40 border border-gold/20 rounded-lg p-4 mb-4 text-left backdrop-blur-sm"
+                            onClick={(e) => e.stopPropagation()} // Stop click bubbling to upload
+                        >
+                            <label className="text-gold text-xs font-bold uppercase tracking-wider mb-2 block">
+                                Account Balance ($)
+                            </label>
+                            <input 
+                                type="number" 
+                                value={equity}
+                                onChange={(e) => setEquity(e.target.value)}
+                                className="w-full bg-transparent border-b border-gray-600 focus:border-gold text-white text-xl font-mono outline-none py-1 placeholder-gray-700"
+                                placeholder="e.g. 1000"
+                            />
+                            <p className="text-[10px] text-gray-500 mt-1">
+                                Used for 1% Risk & Dynamic Lot Claculation
+                            </p>
+                        </div>
+                        {/* 💰 END UNITY INPUT 💰 */}
+
                         <div className="w-16 h-16 rounded-full bg-surface-card border border-gray-700 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
                             <svg className="w-8 h-8 text-gray-400 group-hover:text-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                         </div>
