@@ -89,24 +89,19 @@ def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str
     # Paystack Configured for GHS (Ghana Cedis)
     # Conversion Rate approx 1 USD = 15 GHS (Dynamic fallback used generally)
     
-    if abs(request.amount - 2.99) < 0.1:
-        amount_local = 45    # ~ $3 * 15
+    # Direct GHS Pricing (No conversion needed as frontend sends GHS)
+    if request.amount == 45:
+        amount_local = 45
         plan_tier = "starter"
-    elif abs(request.amount - 9.99) < 0.1:
-        amount_local = 150   # ~ $10 * 15
+    elif request.amount == 150:
+        amount_local = 150
         plan_tier = "active"
-    elif abs(request.amount - 29.99) < 0.1:
-        amount_local = 450   # ~ $30 * 15
+    elif request.amount == 300:
+        amount_local = 300
         plan_tier = "advanced"
-    elif request.amount == 20: 
-        amount_local = 300   # Legacy
-        plan_tier = "monthly"
-    elif request.amount == 204:
-        amount_local = 3000  # Legacy
-        plan_tier = "yearly"
     else:
-        # Fallback for dynamic amounts
-        amount_local = request.amount * 15
+        # Fallback for custom amounts (assume GHS input)
+        amount_local = request.amount
         plan_tier = "custom"
 
     # Paystack requires amount in smallest currency unit (Pesewas for GHS) -> * 100
