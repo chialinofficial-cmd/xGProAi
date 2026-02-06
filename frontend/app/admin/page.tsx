@@ -102,6 +102,10 @@ export default function AdminPage() {
             const finRes = await fetch(`${apiUrl}/admin/finance/stats`, { headers });
             if (finRes.ok) setFinStats(await finRes.json());
 
+            // 1d. Content Stats
+            const chartsRes = await fetch(`${apiUrl}/admin/content/charts`, { headers });
+            if (chartsRes.ok) setCharts(await chartsRes.json());
+
             // 2. Users (Search aware)
             const searchParam = searchQuery ? `&search=${searchQuery}` : '';
             const usersRes = await fetch(`${apiUrl}/admin/users?limit=50${searchParam}`, { headers });
@@ -291,12 +295,54 @@ export default function AdminPage() {
                                 <RechartsTooltip 
                                     cursor={{fill: 'transparent'}}
                                     contentStyle={{ backgroundColor: '#0f1115', borderColor: '#333' }}
-                                    formatter={(value: number) => [`GHS ${value}`, 'Revenue']}
+                                    formatter={(value: any) => [`GHS ${value}`, 'Revenue']}
                                 />
                                 <Bar dataKey="value" fill="#d4af37" radius={[0, 4, 4, 0]} barSize={20} />
                             </BarChart>
                         </ResponsiveContainer>
                      </div>
+                </div>
+
+                {/* 1.5 Financial Overview */}
+                {/* ... existing financial code ... */}
+
+                {/* 1.8 Chart Repository */}
+                <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden">
+                    <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                        <h3 className="font-bold text-white">Latest Analysis Repository (100)</h3>
+                        <span className="text-xs text-gray-500">Live Feed</span>
+                    </div>
+                    <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-[500px] overflow-y-auto">
+                        {charts.map(chart => (
+                            <Link href={`/dashboard/analysis/${chart.id}`} target="_blank" key={chart.id} className="group block relative aspect-[16/9] bg-black rounded-lg overflow-hidden border border-white/10 hover:border-gold transition-all">
+                                {/* Use generic auth-protected image loader or direct path if public */}
+                                {/* Since these are protected uploads, we rely on the browser session or a signed URL. 
+                                    For now, assuming /api/uploads/ works if admin is logged in, or we just show metadata card if image fails. 
+                                */}
+                                <div className="absolute inset-0 bg-gray-900 flex items-center justify-center text-xs text-gray-600">
+                                   Img
+                                </div>
+                                <img 
+                                    src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/${chart.image_url}`} 
+                                    alt={chart.asset}
+                                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                    <div className="flex justify-between items-end">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-white leading-tight">{chart.asset}</p>
+                                            <p className={`text-[9px] ${chart.bias === 'Bullish' ? 'text-green-400' : 'text-red-400'}`}>{chart.bias}</p>
+                                        </div>
+                                        <div className="text-[9px] text-gray-400 text-right">
+                                            <p>{new Date(chart.created_at).toLocaleDateString()}</p>
+                                            <p>{chart.user_email?.split('@')[0]}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
                 </div>
 
                 {/* 2. Visual Analytics */}
