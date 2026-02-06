@@ -54,37 +54,79 @@ export default function DashboardLayout({
 
             {/* UPGRADE MODAL */}
             {isPricingOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-                    <div className="bg-surface-card border border-gold rounded-xl p-8 max-w-md w-full text-center relative shadow-[0_0_50px_rgba(212,175,55,0.2)]">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
+                    <div className="bg-[#0f1115] border border-gray-800 rounded-2xl p-6 max-w-5xl w-full text-center relative shadow-2xl my-8">
                         <button 
                             onClick={() => setIsPricingOpen(false)}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                            className="absolute top-4 right-4 text-gray-500 hover:text-white z-10"
                         >
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
 
-                        <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-                            🚀
-                        </div>
-                        
-                        <h3 className="text-2xl font-bold text-white mb-2">Upgrade Your Plan</h3>
-                        <p className="text-gray-400 mb-6">
-                            Unlock unlimited AI analysis and professional risk strategies.
-                        </p>
+                        <h3 className="text-3xl font-bold text-white mb-2">Simple, Transparent Pricing</h3>
+                        <p className="text-gray-400 mb-8">Choose the perfect plan for your trading journey</p>
 
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => { handlePayment(19.99); setIsPricingOpen(false); }}
-                                className="w-full py-3 rounded-lg bg-gold hover:bg-gold-light text-black font-bold transition-all shadow-lg hover:shadow-gold/20 flex items-center justify-center gap-2"
-                            >
-                                <span>🏆</span> Gold Pro Monthly ($19.99)
-                            </button>
-                            <button 
-                                onClick={() => { handlePayment(10); setIsPricingOpen(false); }}
-                                className="w-full py-3 rounded-lg border border-gold/30 text-gold hover:bg-gold/5 font-semibold transition-all"
-                            >
-                                Weekly Pass ($10/week)
-                            </button>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            
+                            {/* Starter Plan */}
+                            <div className="bg-surface-card border border-gray-800 rounded-xl p-6 flex flex-col hover:border-gray-600 transition-all">
+                                <h4 className="text-xl font-bold text-white mb-1">Starter</h4>
+                                <p className="text-xs text-gray-500 mb-4">Short-term access for testing</p>
+                                <div className="text-3xl font-bold text-white mb-1">$2.99<span className="text-sm text-gray-500 font-normal">/7 Days</span></div>
+                                <ul className="space-y-3 mb-8 text-left text-sm text-gray-400 mt-6 flex-1">
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> Up to 10 uploads/day</li>
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> 7-day access</li>
+                                </ul>
+                                <button
+                                    onClick={() => { handlePayment(2.99); setIsPricingOpen(false); }}
+                                    className="w-full py-3 rounded-lg border border-gray-600 hover:bg-white/5 text-white font-medium transition-all"
+                                >
+                                    Subscribe Now →
+                                </button>
+                            </div>
+
+                            {/* Active Traders (Popular) */}
+                            <div className="bg-surface-card border-2 border-blue-600 rounded-xl p-6 flex flex-col relative transform md:-translate-y-2 shadow-2xl shadow-blue-900/20">
+                                <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                                    Most Popular
+                                </div>
+                                <h4 className="text-xl font-bold text-white mb-1 flex items-center justify-center gap-2">
+                                    Active Traders <span className="text-gold">★</span>
+                                </h4>
+                                <p className="text-xs text-gray-500 mb-4">Best for consistent daily usage</p>
+                                <div className="text-4xl font-bold text-white mb-1">$9.99<span className="text-sm text-gray-500 font-normal">/30 Days</span></div>
+                                <ul className="space-y-3 mb-8 text-left text-sm text-gray-300 mt-6 flex-1">
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> Up to 20 uploads/day</li>
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> 30-day access</li>
+                                </ul>
+                                <button
+                                    onClick={() => { handlePayment(9.99); setIsPricingOpen(false); }}
+                                    className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20"
+                                >
+                                    Subscribe Now →
+                                </button>
+                            </div>
+
+                            {/* Advanced Traders */}
+                            <div className="bg-surface-card border border-gray-800 rounded-xl p-6 flex flex-col hover:border-gray-600 transition-all">
+                                <h4 className="text-xl font-bold text-white mb-1">Advanced Traders</h4>
+                                <p className="text-xs text-gray-500 mb-4">Built for power users</p>
+                                <div className="text-3xl font-bold text-white mb-1">$29.99<span className="text-sm text-gray-500 font-normal">/30 Days</span></div>
+                                <ul className="space-y-3 mb-8 text-left text-sm text-gray-400 mt-6 flex-1">
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> High usage limits</li>
+                                    <li className="flex gap-2"><span className="text-green-500">✓</span> Priority support</li>
+                                </ul>
+                                <button
+                                    onClick={() => { handlePayment(29.99); setIsPricingOpen(false); }}
+                                    className="w-full py-3 rounded-lg border border-gray-600 hover:bg-white/5 text-white font-medium transition-all"
+                                >
+                                    Subscribe Now →
+                                </button>
+                            </div>
+
                         </div>
                     </div>
                 </div>
