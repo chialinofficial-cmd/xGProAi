@@ -302,8 +302,9 @@ def upload_chart(file: UploadFile = File(...)):
     return {"filename": file.filename, "location": file_location}
 
 @app.post("/analyze", response_model=AnalysisResponse)
-def analyze_chart(
+async def analyze_chart(
     file: UploadFile = File(...), 
+    equity: float = Form(1000.0), # New input
     db: Session = Depends(get_db),
     x_user_id: str = Header(None)
 ):

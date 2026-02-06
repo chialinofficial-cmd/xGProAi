@@ -25,7 +25,7 @@ class AIService:
             self.client = None
             self.models_to_try = []
 
-    def analyze_chart(self, image_path):
+    def analyze_chart(self, image_path, equity=1000.0):
         if not self.client:
             raise ValueError("ANTHROPIC_API_KEY is not set. Please add it to your .env file.")
 
@@ -38,9 +38,11 @@ class AIService:
         with open(image_path, "rb") as image_file:
             image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
-        system_prompt = """
+        system_prompt = f"""
         You are xGProAi, the world's leading Institutional XAU/USD (Gold) Analyst & Fund Manager.
         
+        CURRENT ACCOUNT EQUITY: ${equity}
+        RISK PER TRADE: 1.0% (${equity * 0.01})
         
         CRITICAL - GOLD SPECIALIST RULES:
         1.  **ASSET FORCE:** Assume EVERY chart is **XAU/USD** (Gold).
@@ -50,65 +52,72 @@ class AIService:
             *   **Stop Loss Padding:** 
                 *   Low Volatility: Width of Structure + 10-20 pips.
                 *   High Volatility: Width of Structure + 30-50 pips (to survive liquidity grabs).
-        3.  **STRICT RISK MANAGEMENT (1:2 R:R):** 
-            *   **You MUST use a Minimum 1:2 Risk-to-Reward Ratio.**
-            *   First, find the logical **Structure Stop Loss** (below support/above resistance).
-            *   Then, CALCULATE the Take Profit to be exactly **2x** the risk distance.
-        4.  **PRECISION OCR:** 
-            *   Read the Right-Hand Y-Axis carefully. 
+        3.  **DYNAMIC LOT SIZING (Real Math):**
+            *   Your Risk Amount is ${equity * 0.01}.
+            *   Calculate the Lot Size based on your SL Pips.
+            *   Formula: (Risk Amount) / (SL_Pips * 10) [Approx for Gold]. 
+            *   Example: $10 Risk / (50 pips * 10) = 0.02 Lots.
+        4.  **SCENARIO PLANNING:**
+            *   **Invalidation Level:** distinct from SL. The price level where the whole ANALYSIS is wrong (e.g., Structure Break).
+            *   **Breakeven Trigger:** A logical level (e.g., 1:1 RR) to secure the trade.
         
         Analysis Steps (CHAIN OF THOUGHT):
         1.  **Thinking Phase (<analysis>):**
-            *   **Volatility Check:** Rate volatility 1-10 based on candle size/wicks.
+            *   **Volatility Check:** Rate volatility 1-10.
             *   **Bias:** Bullish/Bearish?
-            *   **Level Logic:** Entry @ X. Structure is @ Y. Distance = Z.
-            *   **Risk Check:** Is Z enough for Gold? If Z < 30 pips, widen it.
-            *   **Math:** TP = Entry +/- (Distance * 2).
+            *   **Level Logic:** Entry, SL, TP.
+            *   **Risk Math:** Show your calculation for the Lot Size for ${equity}.
         2.  **Final Output:** Generate the JSON.
         
         Output Format:
         <analysis>
-        [Reasoning includes Volatility Score ...]
+        [Reasoning including Lot Size Math...]
         </analysis>
         
-        {
-            "y_axis_labels": ["4940.00", "4945.00", "4950.00"],
+        {{
+            "y_axis_labels": ["2040.00", "2045.00", "2050.00"],
             "bias": "Bullish" | "Bearish" | "Neutral",
             "confidence": 85,
-            "current_price": 4946.50,
-            "summary": "Gold is showing high volatility rejection...",
-            "structure": {
+            "current_price": 2046.50,
+            "summary": "Gold is rejecting the demand zone...",
+            "structure": {{
                 "trend": "Uptrend",
                 "pattern": "Bull Flag"
-            },
-            "levels": {
-                "entry": 4946.50,
-                "sl": 4940.00,
-                "tp1": 4959.50,
-                "tp2": 4965.00
-            },
-            "risk_management": {
+            }},
+            "levels": {{
+                "entry": 2046.50,
+                "sl": 2040.00,
+                "tp1": 2059.50,
+                "tp2": 2065.00
+            }},
+            "risk_management": {{
                 "stop_loss_pips": 65,
+                "risk_amount_usd": {equity * 0.01},
+                "recommended_lot_size": 0.15,
                 "recommended_leverage": "1:50",
-                "lot_sizing": { "equity_1k": "0.01", "equity_10k": "0.15", "equity_100k": "1.50" },
-                "management_rules": ["Move SL to BE at 1:1", "Take Partial at TP1"]
-            },
-            "technique_confluence": {
+                "management_rules": ["Move SL to BE at 2055", "Take Partial at TP1"]
+            }},
+            "scenarios": {{
+                "invalidation_price": 2038.00,
+                "breakeven_trigger": 2052.50,
+                "bearish_alternative": "If price closes below 2038, look for sells to 2030."
+            }},
+            "technique_confluence": {{
                 "fibonacci_level": "0.618",
                 "wyckoff_phase": "Spring",
                 "liquidity_trap": "Equal Highs"
-            },
-            "metrics": {
+            }},
+            "metrics": {{
                 "risk_reward": "1:2",
                 "volatility": "High",
                 "volatility_score": 8,
                 "sentiment": "Bullish"
-            },
-             "market_context": {
+            }},
+             "market_context": {{
                 "session": "NY Session",
                 "warning": "News impact expected"
-            }
-        }
+            }}
+        }}
         """
 
         errors = []
@@ -135,7 +144,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": "Analyze this XAU/USD chart. Ensure 1:2 Risk/Reward. THINK in <analysis> first. JSON ONLY at the end."
+                                    "text": f"Analyze this XAU/USD chart. Equity: ${equity}. Ensure 1:2 Risk/Reward. THINK in <analysis> first. JSON ONLY at the end."
                                 }
                             ],
                         }
@@ -190,7 +199,7 @@ class AIService:
                 # 3. Post-Processing: Hallucination Check & SMC Validation
                 try:
                     # Ensure all new fields exist to prevent frontend crash
-                    for key in ["structure", "market_context", "risk_management", "technique_confluence", "metrics"]:
+                    for key in ["structure", "market_context", "risk_management", "technique_confluence", "metrics", "scenarios"]:
                          if key not in data: data[key] = {}
                     
                     y_labels = data.get("y_axis_labels", [])
