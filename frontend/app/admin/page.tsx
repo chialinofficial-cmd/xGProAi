@@ -27,6 +27,8 @@ interface Analysis {
     bias: string;
     created_at: string;
     user_id: string;
+    image_url?: string;
+    user_email?: string;
 }
 
 // Analytics Interfaces
@@ -47,7 +49,7 @@ export default function AdminPage() {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [aiStats, setAiStats] = useState<any>(null);
     const [finStats, setFinStats] = useState<any>(null);
-    const [charts, setCharts] = useState<any[]>([]); // New Charts Content
+    const [charts, setCharts] = useState<any[]>([]); // Charts Content
     const [users, setUsers] = useState<User[]>([]);
     const [activity, setActivity] = useState<Analysis[]>([]);
     const [loading, setLoading] = useState(false);
@@ -97,7 +99,7 @@ export default function AdminPage() {
             // 1. Stats
             const statsRes = await fetch(`${apiUrl}/admin/stats`, { headers });
             if (statsRes.ok) setStats(await statsRes.json());
-
+            
             // 1b. AI Stats
             const aiRes = await fetch(`${apiUrl}/admin/ai/stats`, { headers });
             if (aiRes.ok) setAiStats(await aiRes.json());
@@ -147,26 +149,8 @@ export default function AdminPage() {
         }
     };
 
-    // Debounced Search Handled via Enter Key or Button for now to be simple
     const handleSearch = () => {
         fetchData(accessCode);
-    };
-
-    // Actions
-    const handleUpgrade = async (userId: number) => {
-        if (!confirm("Grant Pro access to this user?")) return;
-        performAction(`/admin/users/${userId}/upgrade`, 'POST');
-    };
-
-    const handleDelete = async (userId: number) => {
-        if (!confirm("ARE YOU SURE? This will delete the user and their analyses.")) return;
-        performAction(`/admin/users/${userId}`, 'DELETE');
-    };
-
-    const handleUpdateCredits = async () => {
-        if (!selectedUser) return;
-        performAction(`/admin/users/${selectedUser.id}/credits`, 'POST', { amount: creditAmount });
-        setIsCreditModalOpen(false);
     };
 
     const performAction = async (endpoint: string, method: string, body?: any) => {
@@ -189,6 +173,16 @@ export default function AdminPage() {
         } catch (e) {
             alert("Error executing action");
         }
+    };
+
+    const handleUpgrade = async (userId: number) => {
+        if (!confirm("Grant Pro access to this user?")) return;
+        performAction(`/admin/users/${userId}/upgrade`, 'POST');
+    };
+
+    const handleDelete = async (userId: number) => {
+        if (!confirm("ARE YOU SURE? This will delete the user and their analyses.")) return;
+        performAction(`/admin/users/${userId}`, 'DELETE');
     };
 
     const openCreditModal = (user: User) => {
@@ -394,6 +388,11 @@ export default function AdminPage() {
                         Enter Dashboard
                     </button>
                 </div>
+            </div>
+        );
+    }
+
+    return (
         <div className="min-h-screen bg-background text-white">
             <nav className="border-b border-white/10 bg-surface-card p-4 sticky top-0 z-20">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -523,7 +522,6 @@ export default function AdminPage() {
                                             <span className="text-gray-500">Created At:</span>
                                             <span className="text-gray-300">{new Date(selectedUser.created_at).toLocaleDateString()}</span>
                                         </div>
-                                        {/* Need to add these fields to User interface in frontend if not present, checking... */}
                                     </div>
                                     
                                     <h4 className="text-sm font-bold text-gray-300 mt-6 mb-3 uppercase">Recent User Activity</h4>
