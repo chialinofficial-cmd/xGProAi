@@ -108,11 +108,11 @@ export default function Home() {
 
           {/* Subheadline */}
           <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-            Built exclusively for **XAU/USD** traders who want faster, clearer chart insights without guesswork.
+            AI-powered gold chart analysis that highlights market structure, liquidity, and directional bias from your chart in seconds.
           </p>
 
-          <p className="text-sm text-gray-500 max-w-2xl mx-auto">
-            Upload any **XAU/USD** chart and get instant AI-powered insights on trend direction, liquidity grabs, and key institutional levels specifically tailored for Gold.
+          <p className="text-sm text-gray-500 max-w-2xl mx-auto mt-4 font-medium">
+            No signals. No guessing. No indicators overload. Just clear Institutional insight for XAUUSD traders.
           </p>
 
           {/* No Credit Card Badge */}
@@ -174,6 +174,40 @@ export default function Home() {
 
         </div>
       </main>
+
+      {/* Problem Section (New) */}
+      <section className="py-20 bg-background border-b border-border-subtle relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-red-900/5 blur-3xl rounded-full -mr-20 pointer-events-none"></div>
+        <div className="max-w-5xl mx-auto px-4 text-center relative z-10">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Most Traders Lose Not Because of Entries But <span className="text-red-500">Because of Bias</span>
+          </h2>
+          <p className="text-gray-400 text-lg mb-10 leading-relaxed max-w-3xl mx-auto">
+            Gold doesn't just move randomly. It moves to liquidity, reacts to structure, and punishes retail bias.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-10 text-left">
+            <div className="bg-surface-card border border-red-500/20 p-6 rounded-xl hover:border-red-500/40 transition-colors">
+              <span className="text-red-500 text-xl font-bold block mb-3">❌ Chase Breakouts</span>
+              <p className="text-gray-400 text-sm">Entering trades after the move has already happened, becoming exit liquidity for institutions.</p>
+            </div>
+            <div className="bg-surface-card border border-red-500/20 p-6 rounded-xl hover:border-red-500/40 transition-colors">
+              <span className="text-red-500 text-xl font-bold block mb-3">❌ Lagging Indicators</span>
+              <p className="text-gray-400 text-sm">Relying on RSI or MACD divergence that paints the picture only after the candle closes.</p>
+            </div>
+            <div className="bg-surface-card border border-red-500/20 p-6 rounded-xl hover:border-red-500/40 transition-colors">
+              <span className="text-red-500 text-xl font-bold block mb-3">❌ Institutional Blindness</span>
+              <p className="text-gray-400 text-sm">Entering the market without understanding where the real money (Smart Money) is positioning.</p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-gold/10 to-transparent border-l-4 border-gold p-6 rounded-r-xl inline-block text-left">
+            <p className="text-white text-lg">
+              <span className="text-gold font-bold">xGProAi Fixes That:</span> We show you what the market is <span className="italic">really</span> doing—revealing the bias before you click buy or sell.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Features Section */}
       <section id="features" className="py-24 bg-surface-card border-t border-border-subtle">
