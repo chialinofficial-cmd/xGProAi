@@ -399,7 +399,7 @@ export default function Home() {
               </ul>
 
               <button
-                onClick={() => handlePayment(2.99)}
+                onClick={() => handlePayment(45)}
                 className="w-full py-3 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 transition-all font-semibold"
               >
                 Subscribe Now →
@@ -418,7 +418,7 @@ export default function Home() {
               <p className="text-sm text-gray-400 mb-6">Best for consistent daily usage</p>
 
               <div className="mb-6">
-                <span className="text-5xl font-bold text-white">$9.99</span>
+                <span className="text-5xl font-bold text-white">GHS 150</span>
                 <span className="text-gray-500 text-sm"> / 30 Days</span>
               </div>
 
@@ -429,7 +429,7 @@ export default function Home() {
               </ul>
 
               <button
-                onClick={() => handlePayment(9.99)}
+                onClick={() => handlePayment(150)}
                 className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-lg shadow-blue-900/20"
               >
                 Subscribe Now →
@@ -442,7 +442,7 @@ export default function Home() {
               <p className="text-sm text-gray-400 mb-6">Built for power users</p>
 
               <div className="mb-6">
-                <span className="text-4xl font-bold text-white">$29.99</span>
+                <span className="text-4xl font-bold text-white">GHS 300</span>
                 <span className="text-gray-500 text-sm"> / 30 Days</span>
               </div>
 
@@ -454,7 +454,7 @@ export default function Home() {
               </ul>
 
               <button
-                onClick={() => handlePayment(29.99)}
+                onClick={() => handlePayment(300)}
                 className="w-full py-3 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 transition-all font-semibold"
               >
                 Subscribe Now →

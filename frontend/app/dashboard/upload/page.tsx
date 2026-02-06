@@ -379,16 +379,16 @@ export default function UploadPage() {
 
                         <div className="space-y-3">
                             <button
-                                onClick={() => handlePayment(19.99)}
+                                onClick={() => handlePayment(150)}
                                 className="w-full py-3 rounded-lg bg-gold hover:bg-gold-light text-black font-bold transition-all shadow-lg hover:shadow-gold/20 flex items-center justify-center gap-2"
                             >
-                                <span>🚀</span> Upgrade to Pro ($19.99/mo)
+                                <span>🚀</span> Upgrade to Active (GHS 150)
                             </button>
                             <button
-                                onClick={() => handlePayment(10)}
+                                onClick={() => handlePayment(45)}
                                 className="w-full py-3 rounded-lg border border-gold/30 text-gold hover:bg-gold/5 font-semibold transition-all"
                             >
-                                Weekly Pass ($10/week)
+                                Starter Pass (GHS 45)
                             </button>
                         </div>
                     </div>

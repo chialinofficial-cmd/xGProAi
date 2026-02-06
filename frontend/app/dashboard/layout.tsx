@@ -72,14 +72,14 @@ export default function DashboardLayout({
                             <div className="bg-surface-card border border-gray-800 rounded-xl p-6 flex flex-col hover:border-gray-600 transition-all">
                                 <h4 className="text-xl font-bold text-white mb-1">Starter</h4>
                                 <p className="text-xs text-gray-500 mb-4">Short-term access for testing</p>
-                                <div className="text-3xl font-bold text-white mb-1">$2.99<span className="text-sm text-gray-500 font-normal">/7 Days</span></div>
+                                <div className="text-3xl font-bold text-white mb-1">GHS 45<span className="text-sm text-gray-500 font-normal">/7 Days</span></div>
                                 <ul className="space-y-3 mb-8 text-left text-sm text-gray-400 mt-6 flex-1">
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> Up to 10 uploads/day</li>
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> 7-day access</li>
                                 </ul>
                                 <button
-                                    onClick={() => { handlePayment(2.99); setIsPricingOpen(false); }}
+                                    onClick={() => { handlePayment(45); setIsPricingOpen(false); }}
                                     className="w-full py-3 rounded-lg border border-gray-600 hover:bg-white/5 text-white font-medium transition-all"
                                 >
                                     Subscribe Now →
@@ -95,14 +95,14 @@ export default function DashboardLayout({
                                     Active Traders <span className="text-gold">★</span>
                                 </h4>
                                 <p className="text-xs text-gray-500 mb-4">Best for consistent daily usage</p>
-                                <div className="text-4xl font-bold text-white mb-1">$9.99<span className="text-sm text-gray-500 font-normal">/30 Days</span></div>
+                                <div className="text-4xl font-bold text-white mb-1">GHS 150<span className="text-sm text-gray-500 font-normal">/30 Days</span></div>
                                 <ul className="space-y-3 mb-8 text-left text-sm text-gray-300 mt-6 flex-1">
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> Up to 20 uploads/day</li>
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> 30-day access</li>
                                 </ul>
                                 <button
-                                    onClick={() => { handlePayment(9.99); setIsPricingOpen(false); }}
+                                    onClick={() => { handlePayment(150); setIsPricingOpen(false); }}
                                     className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20"
                                 >
                                     Subscribe Now →
@@ -113,14 +113,14 @@ export default function DashboardLayout({
                             <div className="bg-surface-card border border-gray-800 rounded-xl p-6 flex flex-col hover:border-gray-600 transition-all">
                                 <h4 className="text-xl font-bold text-white mb-1">Advanced Traders</h4>
                                 <p className="text-xs text-gray-500 mb-4">Built for power users</p>
-                                <div className="text-3xl font-bold text-white mb-1">$29.99<span className="text-sm text-gray-500 font-normal">/30 Days</span></div>
+                                <div className="text-3xl font-bold text-white mb-1">GHS 300<span className="text-sm text-gray-500 font-normal">/30 Days</span></div>
                                 <ul className="space-y-3 mb-8 text-left text-sm text-gray-400 mt-6 flex-1">
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> High usage limits</li>
                                     <li className="flex gap-2"><span className="text-green-500">✓</span> Priority support</li>
                                 </ul>
                                 <button
-                                    onClick={() => { handlePayment(29.99); setIsPricingOpen(false); }}
+                                    onClick={() => { handlePayment(300); setIsPricingOpen(false); }}
                                     className="w-full py-3 rounded-lg border border-gray-600 hover:bg-white/5 text-white font-medium transition-all"
                                 >
                                     Subscribe Now →
