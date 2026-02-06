@@ -277,6 +277,7 @@ export default function AdminPage() {
                     <tbody>
                         {users.map(u => (
                             <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
+                                <td className="px-4 py-3">
                                     <div className="font-bold text-white text-base mb-0.5">{u.full_name || 'Trader'}</div>
                                     <div className="text-sm text-gray-300 font-medium mb-0.5">{u.email || '(No Email)'}</div>
                                     <div className="text-[10px] text-gray-500 font-mono">ID: {u.id} • {new Date(u.created_at).toLocaleDateString()}</div>
