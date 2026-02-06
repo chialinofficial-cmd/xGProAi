@@ -699,6 +699,43 @@ def get_ai_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin))
         ]
     }
 
+@app.get("/admin/finance/stats")
+def get_financial_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    # 1. User Tiers count
+    starter = db.query(models.User).filter(models.User.plan_tier == "starter").count()
+    active = db.query(models.User).filter(models.User.plan_tier == "active").count()
+    advanced = db.query(models.User).filter(models.User.plan_tier == "advanced").count()
+    pro_legacy = db.query(models.User).filter(models.User.plan_tier == "pro").count()
+    
+    # 2. MRR Calculation (Approximate based on current pricing)
+    # Starter (Week): 45 GHS -> ~180/mo
+    # Active (Month): 150 GHS
+    # Advanced (Month): 300 GHS
+    # Pro (Legacy): 300 GHS (Assumed same as Advanced)
+    
+    mrr_ghs = (starter * 180) + (active * 150) + (advanced * 300) + (pro_legacy * 300)
+    
+    # 3. Credit Consumption (Total uploads by paid users)
+    # We can approximate this by summing daily_usage_count of paid users today, 
+    # but for "Consumption Stats" we might want historical analysis count.
+    # For now, let's just return the Tier Distribution which is the main revenue driver.
+    
+    return {
+        "mrr_ghs": mrr_ghs,
+        "revenue_breakdown": [
+            {"name": "Starter (Weekly)", "value": starter * 45, "users": starter},
+            {"name": "Active (Monthly)", "value": active * 150, "users": active},
+            {"name": "Advanced (Monthly)", "value": advanced * 300, "users": advanced},
+            {"name": "Legacy Pro", "value": pro_legacy * 300, "users": pro_legacy}
+        ],
+        "tier_distribution": [
+            {"name": "Starter", "value": starter},
+            {"name": "Active", "value": active},
+            {"name": "Advanced", "value": advanced},
+            {"name": "Legacy Pro", "value": pro_legacy}
+        ]
+    }
+
 class TierUpdate(BaseModel):
     tier: str
 
