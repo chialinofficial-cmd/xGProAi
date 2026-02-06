@@ -45,12 +45,16 @@ export default function AdminPage() {
     const [accessCode, setAccessCode] = useState('');
 
     const [stats, setStats] = useState<AdminStats | null>(null);
-    const [aiStats, setAiStats] = useState<any>(null); // New AI Stats State
-    const [finStats, setFinStats] = useState<any>(null); // New Financial Stats
+    const [aiStats, setAiStats] = useState<any>(null);
+    const [finStats, setFinStats] = useState<any>(null);
+    const [charts, setCharts] = useState<any[]>([]); // New Charts Content
     const [users, setUsers] = useState<User[]>([]);
     const [activity, setActivity] = useState<Analysis[]>([]);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+
+    // Tabs State
+    const [activeTab, setActiveTab] = useState('overview');
 
     // V2 Features
     const [searchQuery, setSearchQuery] = useState('');
@@ -193,6 +197,184 @@ export default function AdminPage() {
         setIsCreditModalOpen(true);
     };
 
+    // Render Helpers
+    const renderOverview = () => (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase">Users</p>
+                    <p className="text-3xl font-bold text-white mt-2">{stats?.total_users || 0}</p>
+                </div>
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase">Pro VIPs</p>
+                    <p className="text-3xl font-bold text-gold mt-2">{stats?.pro_users || 0}</p>
+                </div>
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase">Analysis Vol</p>
+                    <p className="text-3xl font-bold text-blue-400 mt-2">{stats?.total_analyses || 0}</p>
+                </div>
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase">Revenue (Est)</p>
+                    <p className="text-3xl font-bold text-green-400 mt-2">${stats?.revenue_estimated || 0}</p>
+                </div>
+            </div>
+             <div className="grid md:grid-cols-2 gap-8">
+                 <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[400px]">
+                     <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Popular Assets</h3>
+                     <ResponsiveContainer width="100%" height="100%">
+                         <PieChart>
+                             <Pie data={assetData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                                 {assetData.map((entry, index) => (
+                                     <Cell key={`cell-${index}`} fill={GRAF_COLORS[index % GRAF_COLORS.length]} />
+                                 ))}
+                             </Pie>
+                             <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} />
+                         </PieChart>
+                     </ResponsiveContainer>
+                 </div>
+                 <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden h-[400px] flex flex-col">
+                    <div className="p-4 border-b border-white/10"><h3 className="font-bold text-white">Live Activity Feed</h3></div>
+                    <div className="flex-1 overflow-y-auto divide-y divide-white/5">
+                        {activity.map(a => (
+                            <div key={a.id} className="p-4 hover:bg-white/5 transition-colors">
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="font-bold text-white text-sm">{a.asset}</span>
+                                    <span className="text-[10px] text-gray-500">{new Date(a.created_at).toLocaleTimeString()}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className={`text-xs px-2 py-0.5 rounded ${a.bias === 'Bullish' ? 'bg-green-500/20 text-green-400' : a.bias === 'Bearish' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'}`}>{a.bias}</span>
+                                    <Link href={`/dashboard/analysis/${a.id}`} target="_blank" className="text-xs text-gold hover:underline">View</Link>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+             </div>
+        </div>
+    );
+
+    const renderUsers = () => (
+         <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center flex-wrap gap-4">
+                <h3 className="font-bold text-white">User Management</h3>
+                <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        placeholder="Search email..." 
+                        className="bg-black border border-white/10 rounded px-3 py-1 text-sm text-white"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <button onClick={handleSearch} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm text-white">Search</button>
+                </div>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-gray-400">
+                    <thead className="bg-black/20 text-xs uppercase font-medium">
+                        <tr>
+                            <th className="px-4 py-3">User</th>
+                            <th className="px-4 py-3">Plan</th>
+                            <th className="px-4 py-3">Credits</th>
+                            <th className="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map(u => (
+                            <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
+                                <td className="px-4 py-3">
+                                    <div className="font-bold text-white">{u.email}</div>
+                                    <div className="text-xs text-gray-600 font-mono">{u.id}</div>
+                                </td>
+                                <td className="px-4 py-3">
+                                    <span className={`px-2 py-1 rounded text-xs ${u.plan_tier === 'pro' ? 'bg-gold/20 text-gold' : 'bg-gray-800 text-gray-400'}`}>{u.plan_tier.toUpperCase()}</span>
+                                </td>
+                                <td className="px-4 py-3 text-white font-mono">{u.credits_balance}</td>
+                                <td className="px-4 py-3 text-right space-x-2">
+                                    <button onClick={() => openCreditModal(u)} className="text-xs text-blue-400 hover:underline">Details</button>
+                                    <button onClick={() => handleDelete(u.id)} className="text-xs text-red-500 hover:text-red-400">Trash</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+
+    const renderAI = () => (
+         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase">AI Latency (Avg)</p>
+                    <p className="text-3xl font-bold text-blue-400 mt-2">{aiStats?.avg_latency_ms || 0}<span className="text-sm text-gray-500">ms</span></p>
+                </div>
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase">Avg Confidence</p>
+                    <p className="text-3xl font-bold text-gold mt-2">{aiStats?.avg_confidence || 0}%</p>
+                </div>
+                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase">Win Rate (Est)</p>
+                    <p className="text-3xl font-bold text-green-400 mt-2">{aiStats?.win_rate || 0}%</p>
+                </div>
+            </div>
+            <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[400px]">
+                <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">AI Latency Trend (Last 50 Requests)</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={aiStats?.latency_history || []}>
+                        <XAxis dataKey="date" stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
+                        <RechartsTooltip contentStyle={{ backgroundColor: '#0f1115', borderColor: '#333' }} itemStyle={{ color: '#fff' }} />
+                        <Bar dataKey="ms" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+         </div>
+    );
+
+    const renderFinance = () => (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="grid md:grid-cols-3 gap-8">
+                 <div className="bg-gradient-to-br from-gold/20 to-black border border-gold/30 p-6 rounded-xl flex flex-col justify-center">
+                    <p className="text-gold text-sm uppercase tracking-wider mb-2">Monthly Recurring Revenue</p>
+                    <p className="text-5xl font-bold text-white"><span className="text-2xl text-gray-400 mr-1">GHS</span>{finStats?.mrr_ghs?.toLocaleString() || 0}</p>
+                    <p className="text-xs text-gray-500 mt-2">Estimated based on active plans</p>
+                 </div>
+                 <div className="md:col-span-2 bg-surface-card border border-white/10 p-6 rounded-xl h-[300px]">
+                    <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Revenue by Tier</h3>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={finStats?.revenue_breakdown || []} layout="vertical">
+                            <XAxis type="number" stroke="#4b5563" fontSize={10} hide />
+                            <YAxis dataKey="name" type="category" stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} width={100} />
+                            <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#0f1115', borderColor: '#333' }} formatter={(value: any) => [`GHS ${value}`, 'Revenue']} />
+                            <Bar dataKey="value" fill="#d4af37" radius={[0, 4, 4, 0]} barSize={20} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                 </div>
+            </div>
+        </div>
+    );
+
+    const renderContent = () => (
+         <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center"><h3 className="font-bold text-white">Recent Uploads</h3><span className="text-xs text-gray-500">Live Repository</span></div>
+            <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-[70vh] overflow-y-auto">
+                {charts.map(chart => (
+                    <Link href={`/dashboard/analysis/${chart.id}`} target="_blank" key={chart.id} className="group block relative aspect-[16/9] bg-black rounded-lg overflow-hidden border border-white/10 hover:border-gold transition-all">
+                        <div className="absolute inset-0 bg-gray-900 flex items-center justify-center text-xs text-gray-600">Img</div>
+                        <img src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/${chart.image_url}`} alt={chart.asset} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                            <div className="flex justify-between items-end">
+                                <div><p className="text-[10px] font-bold text-white leading-tight">{chart.asset}</p><p className={`text-[9px] ${chart.bias === 'Bullish' ? 'text-green-400' : 'text-red-400'}`}>{chart.bias}</p></div>
+                                <div className="text-[9px] text-gray-400 text-right"><p>{new Date(chart.created_at).toLocaleDateString()}</p></div>
+                            </div>
+                        </div>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+
     if (!authorized) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -212,240 +394,56 @@ export default function AdminPage() {
                         Enter Dashboard
                     </button>
                 </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <nav className="border-b border-white/10 bg-surface-card p-4">
+        <div className="min-h-screen bg-background text-white">
+            <nav className="border-b border-white/10 bg-surface-card p-4 sticky top-0 z-20">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                        <span className="text-gold">Admin</span> Panel <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded">V2</span>
-                    </h1>
+                    <div className="flex items-center gap-6">
+                        <h1 className="text-xl font-bold flex items-center gap-2">
+                            <span className="text-gold">Admin</span> Panel <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded">V3</span>
+                        </h1>
+                        <div className="hidden md:flex gap-1 bg-black/30 p-1 rounded-lg">
+                            {['overview', 'users', 'ai', 'finance', 'content'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <button onClick={() => { localStorage.removeItem('adminKey'); window.location.reload(); }} className="text-xs text-red-400 hover:text-red-300">
                         Logout
                     </button>
                 </div>
             </nav>
 
-            <main className="max-w-7xl mx-auto p-6 space-y-8">
+            <main className="max-w-7xl mx-auto p-6">
                 {errorMsg && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl text-center font-mono text-sm">
-                        ⚠️ Connection Error: {errorMsg}
+                    <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl text-center font-mono text-sm">
+                        ⚠️ Limit Error: {errorMsg}
                     </div>
                 )}
-
-                {/* 1. KPIs */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                        <p className="text-gray-400 text-xs uppercase">Users</p>
-                        <p className="text-3xl font-bold text-white mt-2">{stats?.total_users || 0}</p>
-                    </div>
-                    <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                        <p className="text-gray-400 text-xs uppercase">AI Latency (Avg)</p>
-                        <p className="text-3xl font-bold text-blue-400 mt-2">{aiStats?.avg_latency_ms || 0}<span className="text-sm text-gray-500">ms</span></p>
-                    </div>
-                    <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                        <p className="text-gray-400 text-xs uppercase">Avg Confidence</p>
-                        <p className="text-3xl font-bold text-gold mt-2">{aiStats?.avg_confidence || 0}%</p>
-                    </div>
-                    <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                        <p className="text-gray-400 text-xs uppercase">Win Rate (Est)</p>
-                        <p className="text-3xl font-bold text-green-400 mt-2">{aiStats?.win_rate || 0}%</p>
-                    </div>
-                </div>
-
-                {/* AI Performance Charts */}
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[300px]">
-                    <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">AI Latency Trend (Last 50 Requests)</h3>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={aiStats?.latency_history || []}>
-                            <XAxis dataKey="date" stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
-                            <RechartsTooltip 
-                                contentStyle={{ backgroundColor: '#0f1115', borderColor: '#333' }}
-                                itemStyle={{ color: '#fff' }}
-                            />
-                            <Bar dataKey="ms" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* 1.5 Financial Overview */}
-                <div className="grid md:grid-cols-3 gap-8">
-                     {/* MRR Card */}
-                     <div className="bg-gradient-to-br from-gold/20 to-black border border-gold/30 p-6 rounded-xl flex flex-col justify-center">
-                        <p className="text-gold text-sm uppercase tracking-wider mb-2">Monthly Recurring Revenue</p>
-                        <p className="text-5xl font-bold text-white">
-                            <span className="text-2xl text-gray-400 mr-1">GHS</span>
-                            {finStats?.mrr_ghs?.toLocaleString() || 0}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">Estimated based on active plans</p>
-                     </div>
-
-                     {/* Revenue Breakdown */}
-                     <div className="md:col-span-2 bg-surface-card border border-white/10 p-6 rounded-xl h-[250px]">
-                        <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Revenue by Tier</h3>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={finStats?.revenue_breakdown || []} layout="vertical">
-                                <XAxis type="number" stroke="#4b5563" fontSize={10} hide />
-                                <YAxis dataKey="name" type="category" stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} width={100} />
-                                <RechartsTooltip 
-                                    cursor={{fill: 'transparent'}}
-                                    contentStyle={{ backgroundColor: '#0f1115', borderColor: '#333' }}
-                                    formatter={(value: any) => [`GHS ${value}`, 'Revenue']}
-                                />
-                                <Bar dataKey="value" fill="#d4af37" radius={[0, 4, 4, 0]} barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                     </div>
-                </div>
-
-                {/* 1.5 Financial Overview */}
-                {/* ... existing financial code ... */}
-
-                {/* 1.8 Chart Repository */}
-                <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden">
-                    <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                        <h3 className="font-bold text-white">Latest Analysis Repository (100)</h3>
-                        <span className="text-xs text-gray-500">Live Feed</span>
-                    </div>
-                    <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-[500px] overflow-y-auto">
-                        {charts.map(chart => (
-                            <Link href={`/dashboard/analysis/${chart.id}`} target="_blank" key={chart.id} className="group block relative aspect-[16/9] bg-black rounded-lg overflow-hidden border border-white/10 hover:border-gold transition-all">
-                                {/* Use generic auth-protected image loader or direct path if public */}
-                                {/* Since these are protected uploads, we rely on the browser session or a signed URL. 
-                                    For now, assuming /api/uploads/ works if admin is logged in, or we just show metadata card if image fails. 
-                                */}
-                                <div className="absolute inset-0 bg-gray-900 flex items-center justify-center text-xs text-gray-600">
-                                   Img
-                                </div>
-                                <img 
-                                    src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/${chart.image_url}`} 
-                                    alt={chart.asset}
-                                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
-                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                />
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
-                                    <div className="flex justify-between items-end">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-white leading-tight">{chart.asset}</p>
-                                            <p className={`text-[9px] ${chart.bias === 'Bullish' ? 'text-green-400' : 'text-red-400'}`}>{chart.bias}</p>
-                                        </div>
-                                        <div className="text-[9px] text-gray-400 text-right">
-                                            <p>{new Date(chart.created_at).toLocaleDateString()}</p>
-                                            <p>{chart.user_email?.split('@')[0]}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
+                
+                {/* Mobile Tab Select */}
+                <div className="md:hidden mb-6">
+                     <select 
+                        value={activeTab} 
+                        onChange={(e) => setActiveTab(e.target.value)}
+                        className="w-full bg-surface-card border border-white/10 text-white p-3 rounded-lg"
+                     >
+                        {['overview', 'users', 'ai', 'finance', 'content'].map(tab => (
+                            <option key={tab} value={tab}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</option>
                         ))}
-                    </div>
+                     </select>
                 </div>
 
-                {/* 2. Visual Analytics */}
-                <div className="grid md:grid-cols-2 gap-8">
-                    <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[300px]">
-                        <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Analysis Volume (30D)</h3>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={usageData}>
-                                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#666" />
-                                <YAxis stroke="#666" />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} />
-                                <Bar dataKey="count" fill="#d4af37" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[300px]">
-                        <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Popular Assets</h3>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={assetData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                    {assetData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={GRAF_COLORS[index % GRAF_COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* 3. User Management */}
-                <div className="grid lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-surface-card border border-white/10 rounded-xl overflow-hidden">
-                        <div className="p-4 border-b border-white/10 flex justify-between items-center flex-wrap gap-4">
-                            <h3 className="font-bold text-white">User Management</h3>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    placeholder="Search email..."
-                                    className="bg-black/50 border border-white/10 rounded px-3 py-1 text-sm text-white"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                />
-                                <button onClick={handleSearch} className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-sm text-white">Search</button>
-                            </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-400">
-                                <thead className="bg-black/20 text-xs uppercase text-gray-500">
-                                    <tr>
-                                        <th className="px-4 py-3">User</th>
-                                        <th className="px-4 py-3">Tier</th>
-                                        <th className="px-4 py-3">Credits</th>
-                                        <th className="px-4 py-3 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {users.map(u => (
-                                        <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
-                                            <td className="px-4 py-3">
-                                                <div className="font-bold text-white">{u.email}</div>
-                                                <div className="text-xs text-gray-600 font-mono">{u.id}</div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className={`px-2 py-1 rounded text-xs ${u.plan_tier === 'pro' ? 'bg-gold/20 text-gold' : 'bg-gray-800 text-gray-400'}`}>
-                                                    {u.plan_tier.toUpperCase()}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-white font-mono">{u.credits_balance}</td>
-                                            <td className="px-4 py-3 text-right space-x-2">
-                                                <button onClick={() => openCreditModal(u)} className="text-xs text-blue-400 hover:underline">Credits</button>
-                                                {u.plan_tier !== 'pro' && <button onClick={() => handleUpgrade(u.id)} className="text-xs text-gold hover:underline">Gift Pro</button>}
-                                                <button onClick={() => handleDelete(u.id)} className="text-xs text-red-500 hover:text-red-400">Trash</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Live Feed */}
-                    <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden h-fit">
-                        <div className="p-4 border-b border-white/10"><h3 className="font-bold text-white">Live Feed</h3></div>
-                        <div className="divide-y divide-white/5 max-h-[600px] overflow-y-auto">
-                            {activity.map(a => (
-                                <div key={a.id} className="p-4 hover:bg-white/5 transition-colors">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className="font-bold text-white text-sm">{a.asset}</span>
-                                        <span className="text-[10px] text-gray-500">{new Date(a.created_at).toLocaleTimeString()}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className={`text-xs px-2 py-0.5 rounded ${a.bias === 'Bullish' ? 'bg-green-500/20 text-green-400' :
-                                                a.bias === 'Bearish' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
-                                            }`}>{a.bias}</span>
-                                        <Link href={`/dashboard/analysis/${a.id}`} target="_blank" className="text-xs text-gold hover:underline">View</Link>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                {activeTab === 'overview' && renderOverview()}
+                {activeTab === 'users' && renderUsers()}
+                {activeTab === 'ai' && renderAI()}
+                {activeTab === 'finance' && renderFinance()}
+                {activeTab === 'content' && renderContent()}
             </main>
 
             {/* User Detail Modal (V3) */}
