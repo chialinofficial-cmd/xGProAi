@@ -9,3 +9,4 @@ anthropic>=0.30.0
 requests
 pydantic[email]
 email-validator
+psycopg2-binary
