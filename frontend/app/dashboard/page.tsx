@@ -15,7 +15,7 @@ export default function DashboardHome() {
         credits_remaining: 10,
         plan_tier: 'trial'
     });
-    const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!user) return;
@@ -43,14 +43,32 @@ export default function DashboardHome() {
                 }
             } catch (error) {
                 console.error("Failed to load dashboard data", error);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchData();
     }, [user]);
 
+    if (loading) {
+        return (
+            <div className="space-y-6 animate-pulse">
+                {/* Banner Skeleton */}
+                <div className="h-48 rounded-xl bg-surface-card border border-white/5"></div>
+                
+                {/* Stats Grid Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-32 bg-surface-card rounded-xl border border-white/5"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
 
             {/* Welcome Banner */}
             <div className="rounded-xl overflow-hidden relative bg-gradient-to-r from-blue-600 to-purple-600 p-8 shadow-lg">

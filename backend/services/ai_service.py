@@ -3,8 +3,11 @@ import base64
 import anthropic
 import mimetypes
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 class AIService:
     def __init__(self):
@@ -132,7 +135,7 @@ class AIService:
         # Try models in order
         for model in self.models_to_try:
             try:
-                print(f"Attempting analysis with model: {model}")
+                logger.info(f"Attempting analysis with model: {model}")
                 response = self.client.messages.create(
                     model=model,
                     max_tokens=3000,
@@ -200,7 +203,7 @@ class AIService:
                          try:
                               data = json.loads(json_str)
                          except:
-                              print(f"Analysis CoT captured but JSON failed: {text_response[:200]}...")
+                              logger.warning(f"Analysis CoT captured but JSON failed: {text_response[:200]}...")
                               raise Exception("Failed to parse AI response")
 
                 # 3. Post-Processing: Hallucination Check & SMC Validation
@@ -229,7 +232,7 @@ class AIService:
                             
                             # HALLUCINATION CHECK: > 1000 points deviation
                             if abs(entry_float - avg_label) > 1000:
-                                print(f"HALLUCINATION DETECTED: Entry {entry_float} vs AvgLabel {avg_label}")
+                                logger.warning(f"HALLUCINATION DETECTED: Entry {entry_float} vs AvgLabel {avg_label}")
                                 
                                 # FIX: Re-center around visual labels
                                 new_entry = avg_label
@@ -274,7 +277,7 @@ class AIService:
                             
                             # If invalid logic (e.g. Bullish but SL > Entry), reset to default 1:2
                             if not valid_trade and (is_bullish or is_bearish):
-                                print(f"Invalid Logic Detected ({bias}, Entry: {entry_price}, SL: {sl_price}). Resetting to default 60pip SL.")
+                                logger.warning(f"Invalid Logic Detected ({bias}, Entry: {entry_price}, SL: {sl_price}). Resetting to default 60pip SL.")
                                 sl_pips = 6.0 # 60 pips gold standard
                                 if is_bullish:
                                     levels["entry"] = entry_price
@@ -297,10 +300,10 @@ class AIService:
                             json_str = json.dumps(data)
                             
                         except Exception as logic_err:
-                            print(f"Logic enforcement error: {logic_err}")
+                            logger.error(f"Logic enforcement error: {logic_err}")
 
                         except Exception as e:
-                            print(f"Error during hallucination fix: {e}")
+                            logger.error(f"Error during hallucination fix: {e}")
 
                     # 4. UNIVERSAL LOGIC VALIDATION (Sanity Check)
                     # This runs regardless of hallucination check to catch minor logic errors
@@ -320,20 +323,20 @@ class AIService:
                         if is_bullish:
                             # Rule: SL < Entry < TP
                             if sl >= entry:
-                                print(f"Logic Fix (Bullish): SL {sl} >= Entry {entry}. Resetting SL.")
+                                logger.warning(f"Logic Fix (Bullish): SL {sl} >= Entry {entry}. Resetting SL.")
                                 levels["sl"] = round(entry - points_sl, 2)
                             if tp1 <= entry:
-                                print(f"Logic Fix (Bullish): TP {tp1} <= Entry {entry}. Resetting TP.")
+                                logger.warning(f"Logic Fix (Bullish): TP {tp1} <= Entry {entry}. Resetting TP.")
                                 levels["tp1"] = round(entry + points_tp, 2)
                                 levels["tp2"] = round(entry + (points_tp * 1.5), 2)
 
                         elif is_bearish:
                             # Rule: TP < Entry < SL
                             if sl <= entry:
-                                print(f"Logic Fix (Bearish): SL {sl} <= Entry {entry}. Resetting SL.")
+                                logger.warning(f"Logic Fix (Bearish): SL {sl} <= Entry {entry}. Resetting SL.")
                                 levels["sl"] = round(entry + points_sl, 2)
                             if tp1 >= entry:
-                                print(f"Logic Fix (Bearish): TP {tp1} >= Entry {entry}. Resetting TP.")
+                                logger.warning(f"Logic Fix (Bearish): TP {tp1} >= Entry {entry}. Resetting TP.")
                                 levels["tp1"] = round(entry - points_tp, 2)
                                 levels["tp2"] = round(entry - (points_tp * 1.5), 2)
                         
@@ -341,15 +344,15 @@ class AIService:
                         json_str = json.dumps(data)
                         
                     except Exception as logic_err:
-                        print(f"Logic validation error: {logic_err}")
+                        logger.error(f"Logic validation error: {logic_err}")
                             
                 except Exception as parse_err:
-                    print(f"Post-processing warning: {parse_err}")
+                    logger.warning(f"Post-processing warning: {parse_err}")
 
                 return json_str
             
             except Exception as e:
-                print(f"Model {model} failed: {e}")
+                logger.error(f"Model {model} failed: {e}")
                 errors.append(f"{model}: {str(e)}")
                 continue
         

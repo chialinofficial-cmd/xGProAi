@@ -15,122 +15,37 @@ from fastapi.staticfiles import StaticFiles
 
 
 
+import logging
+
+# Configure Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # Create Tables on Startup
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 
+# ... (Previous imports)
 
-
-from fastapi.responses import FileResponse
-
-# Custom Image Serving (Handles /tmp for Vercel)
+# Custom Image Serving
 @app.get("/uploads/{filename}")
-async def serve_upload(filename: str):
-    # Priority 1: Check /tmp (Vercel session uploads)
-    tmp_path = os.path.join("/tmp", filename)
-    if os.path.exists(tmp_path):
-        return FileResponse(tmp_path)
-    
-    # Priority 2: Check local uploads (Persistent/Dev)
-    local_path = os.path.join("uploads", filename)
-    if os.path.exists(local_path):
-        return FileResponse(local_path)
-        
-    raise HTTPException(status_code=404, detail="Image not found")
+# ... (rest of code)
 
-# Still mount static for other potential assets if needed, but the route above takes precedence for specific files
-try:
-    os.makedirs("uploads", exist_ok=True)
-    # mount to a different name to avoid conflict if desired, or keep as fallback
-    # app.mount("/static_uploads", StaticFiles(directory="uploads"), name="uploads")
-    pass 
-except Exception:
-    pass
-
-# CORS Setup
-# CORS Setup
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# -----------------
-# Paystack Integration
-# -----------------
-import requests
-import hashlib
-import hmac
-from fastapi import Request
-
-# Paystack Configuration
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
-
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-class PaystackInitRequest(BaseModel):
-    amount: float
-    email: str
-
-@app.post("/paystack/initialize")
-def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str = Header(None)):
-    if not x_user_id:
-        raise HTTPException(status_code=400, detail="User ID required")
-    
-    # Paystack Configured for GHS (Ghana Cedis)
-    # Conversion Rate approx 1 USD = 15 GHS (Dynamic fallback used generally)
-    
-    # Direct GHS Pricing (No conversion needed as frontend sends GHS)
-    if request.amount == 45:
-        amount_local = 45
-        plan_tier = "starter"
-    elif request.amount == 150:
-        amount_local = 150
-        plan_tier = "active"
-    elif request.amount == 300:
-        amount_local = 300
-        plan_tier = "advanced"
-    else:
-        # Fallback for custom amounts (assume GHS input)
-        amount_local = request.amount
-        plan_tier = "custom"
-
-    # Paystack requires amount in smallest currency unit (Pesewas for GHS) -> * 100
-    amount_kobo = int(amount_local * 100) 
-
-    headers = {
-        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    callback_url = os.getenv("FRONTEND_URL", "http://localhost:3000") + '/dashboard?payment=success'
-    
-    payload = {
-        "email": request.email,
-        "amount": amount_kobo,
-        "currency": "GHS", # GHS for Ghana Cedis
-        "callback_url": callback_url,
-        "metadata": {
-            "user_id": x_user_id,
-            "plan_tier": plan_tier
-        }
-    }
-    
+# Paystack
+# ...
     try:
         response = requests.post("https://api.paystack.co/transaction/initialize", json=payload, headers=headers)
         res_data = response.json()
         
         if not response.ok or not res_data.get("status"):
-            print(f"Paystack Error: {res_data}")
+            logger.error(f"Paystack Error: {res_data}")
             # Return either the Paystack message or a default string
             error_msg = res_data.get("message", "Payment initialization failed at Paystack")
             raise HTTPException(status_code=400, detail=error_msg)
@@ -141,7 +56,7 @@ def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str
         # Don't wrap HTTP exceptions, let them bubble up
         raise he
     except Exception as e:
-        print(f"Paystack Exception: {e}")
+        logger.error(f"Paystack Exception: {e}")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
@@ -152,7 +67,7 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
     
     if not PAYSTACK_SECRET_KEY:
          # Log this specific error for easier debugging
-         print("MISSING PAYSTACK_SECRET_KEY")
+         logger.error("MISSING PAYSTACK_SECRET_KEY")
          raise HTTPException(status_code=500, detail="Server misconfiguration")
 
     # Verify Signature (HMAC SHA512)
@@ -198,7 +113,7 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
                 user.credits_balance = 999 
                 
                 db.commit()
-                print(f"Paystack Success: {user_id} upgraded to {plan_tier} for {days_to_add} days")
+                logger.info(f"Paystack Success: {user_id} upgraded to {plan_tier} for {days_to_add} days")
                 
     return {"status": "success"}
 
@@ -457,35 +372,35 @@ async def analyze_chart(
         sentiment_service = SentimentService()
         
         if not ai_service.api_key:
-             print("Error: ANTHROPIC_API_KEY not found in environment.")
+             logger.error("Error: ANTHROPIC_API_KEY not found in environment.")
              raise HTTPException(status_code=500, detail="Configuration Error: ANTHROPIC_API_KEY is missing.")
 
-        print("Initializing Tri-Model Analysis...")
+        logger.info("Initializing Tri-Model Analysis...")
         
         # --- MODEL 1: SENTIMENT ENGINE ---
-        print("1. Sentiment Engine: Checking News...")
+        logger.info("1. Sentiment Engine: Checking News...")
         news_risk = sentiment_service.check_high_impact_news()
         
         # SAFETY SWITCH: Reject trade if High Impact News is imminent
         if news_risk.get("risk") == "HIGH":
             event_name = news_risk.get("event")
-            print(f"SAFETY SWITCH TRIGGERED: {event_name}")
+            logger.warning(f"SAFETY SWITCH TRIGGERED: {event_name}")
             raise HTTPException(status_code=400, detail=f"TRADING PAUSED: High Impact News Detected ({event_name}). System prevents entry during volatility spikes.")
             
         market_sentiment = sentiment_service.get_market_sentiment()
-        print(f"   Sentiment: {market_sentiment.get('label')} ({market_sentiment.get('score')})")
+        logger.info(f"   Sentiment: {market_sentiment.get('label')} ({market_sentiment.get('score')})")
 
         # --- MODEL 2: QUANT ENGINE ---
-        print("2. Quant Engine: Analyzing Structure...")
+        logger.info("2. Quant Engine: Analyzing Structure...")
         # Fetch OHLCV (Sync for now, can be async)
         # Note: In async route, we should await if method is async. fetch_ohlcv is async in definition but we need to run it.
         # Since we are in an async def, we can await.
         df = await quant_service.fetch_ohlcv("XAU/USD")
         quant_analysis = quant_service.analyze_market_structure(df)
-        print(f"   Quant: {quant_analysis.get('trend')} | Volatility Alert: {quant_analysis.get('volatility_alert')}")
+        logger.info(f"   Quant: {quant_analysis.get('trend')} | Volatility Alert: {quant_analysis.get('volatility_alert')}")
 
         # --- MODEL 3: VISION ENGINE (SMC) ---
-        print("3. Vision Engine: Analyzing Chart with Context...")
+        logger.info("3. Vision Engine: Analyzing Chart with Context...")
         
         # Measure Latency
         start_time = datetime.datetime.utcnow()

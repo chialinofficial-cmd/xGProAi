@@ -388,7 +388,7 @@ export default function Home() {
               <p className="text-sm text-gray-400 mb-6">Short-term access for testing</p>
 
               <div className="mb-6">
-                <span className="text-4xl font-bold text-white">$2.99</span>
+                <span className="text-4xl font-bold text-white">GHS 45</span>
                 <span className="text-gray-500 text-sm"> / 7 Days</span>
               </div>
 
