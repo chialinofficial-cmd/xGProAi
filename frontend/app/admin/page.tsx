@@ -346,27 +346,106 @@ export default function AdminPage() {
                 </div>
             </main>
 
-            {/* Credit Modal */}
+            {/* User Detail Modal (V3) */}
             {isCreditModalOpen && selectedUser && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-surface-card border border-white/20 p-6 rounded-xl w-full max-w-sm">
-                        <h3 className="text-xl font-bold text-white mb-4">Adjust Credits</h3>
-                        <p className="text-sm text-gray-400 mb-4">User: {selectedUser.email}</p>
-
-                        <div className="flex items-center gap-4 mb-6">
-                            <button onClick={() => setCreditAmount(Math.max(0, creditAmount - 1))} className="p-2 bg-white/10 rounded hover:bg-white/20">-</button>
-                            <input
-                                type="number"
-                                className="bg-black border border-white/10 rounded p-2 text-center text-white w-24"
-                                value={creditAmount}
-                                onChange={(e) => setCreditAmount(parseInt(e.target.value) || 0)}
-                            />
-                            <button onClick={() => setCreditAmount(creditAmount + 1)} className="p-2 bg-white/10 rounded hover:bg-white/20">+</button>
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div className="bg-surface-card border border-white/20 p-6 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    {selectedUser.email}
+                                    <span className={`text-[10px] px-2 py-0.5 rounded border ${selectedUser.plan_tier === 'pro' ? 'border-gold text-gold' : 'border-gray-600 text-gray-400'}`}>
+                                        {selectedUser.plan_tier.toUpperCase()}
+                                    </span>
+                                </h3>
+                                <p className="text-xs text-gray-500 font-mono mt-1">ID: {selectedUser.firebase_uid}</p>
+                            </div>
+                            <button onClick={() => setIsCreditModalOpen(false)} className="text-gray-400 hover:text-white">✕</button>
                         </div>
 
-                        <div className="flex gap-2">
-                            <button onClick={() => setIsCreditModalOpen(false)} className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded text-gray-300">Cancel</button>
-                            <button onClick={handleUpdateCredits} className="flex-1 py-2 bg-gold hover:bg-gold-light text-black font-bold rounded">Save</button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            {/* Actions Column */}
+                            <div className="space-y-6">
+                                {/* Credit Management */}
+                                <div className="bg-black/40 p-4 rounded-lg border border-white/5">
+                                    <h4 className="text-sm font-bold text-gray-300 mb-3 uppercase">Credits</h4>
+                                    <div className="flex items-center gap-4">
+                                        <button onClick={() => setCreditAmount(Math.max(0, creditAmount - 1))} className="p-2 bg-white/10 rounded hover:bg-white/20">-</button>
+                                        <input
+                                            type="number"
+                                            className="bg-black border border-white/10 rounded p-2 text-center text-white w-20"
+                                            value={creditAmount}
+                                            onChange={(e) => setCreditAmount(parseInt(e.target.value) || 0)}
+                                        />
+                                        <button onClick={() => setCreditAmount(creditAmount + 1)} className="p-2 bg-white/10 rounded hover:bg-white/20">+</button>
+                                        <button 
+                                            onClick={() => performAction(`/admin/users/${selectedUser.id}/credits`, 'POST', { amount: creditAmount })}
+                                            className="ml-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold"
+                                        >
+                                            Update
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Tier Management */}
+                                <div className="bg-black/40 p-4 rounded-lg border border-white/5">
+                                    <h4 className="text-sm font-bold text-gray-300 mb-3 uppercase">Plan Tier</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['free', 'starter', 'active', 'advanced'].map(tier => (
+                                            <button
+                                                key={tier}
+                                                onClick={() => performAction(`/admin/users/${selectedUser.id}/tier`, 'POST', { tier })}
+                                                className={`px-3 py-1.5 rounded text-xs font-bold border ${selectedUser.plan_tier === tier ? 'bg-white text-black border-white' : 'bg-transparent text-gray-400 border-gray-700 hover:border-gray-500'}`}
+                                            >
+                                                {tier.toUpperCase()}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Trial Extension */}
+                                <div className="bg-black/40 p-4 rounded-lg border border-white/5">
+                                    <h4 className="text-sm font-bold text-gray-300 mb-3 uppercase">Extend Access</h4>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => performAction(`/admin/users/${selectedUser.id}/extend-trial`, 'POST', { days: 3 })} className="flex-1 py-2 bg-green-900/30 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-900/50">+3 Days</button>
+                                        <button onClick={() => performAction(`/admin/users/${selectedUser.id}/extend-trial`, 'POST', { days: 7 })} className="flex-1 py-2 bg-green-900/30 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-900/50">+7 Days</button>
+                                        <button onClick={() => performAction(`/admin/users/${selectedUser.id}/extend-trial`, 'POST', { days: 30 })} className="flex-1 py-2 bg-green-900/30 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-900/50">+30 Days</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Info Column */}
+                            <div className="space-y-4 text-sm">
+                                <div className="bg-black/40 p-4 rounded-lg border border-white/5 h-full">
+                                    <h4 className="text-sm font-bold text-gray-300 mb-3 uppercase">Subscription Details</h4>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Created At:</span>
+                                            <span className="text-gray-300">{new Date(selectedUser.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                        {/* Need to add these fields to User interface in frontend if not present, checking... */}
+                                    </div>
+                                    
+                                    <h4 className="text-sm font-bold text-gray-300 mt-6 mb-3 uppercase">Recent User Activity</h4>
+                                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                                        {/* We filter the global activity list for this user as a quick hack until we wire up the full details endpoint */}
+                                        {activity.filter(a => a.user_id === selectedUser.firebase_uid).length > 0 ? (
+                                            activity.filter(a => a.user_id === selectedUser.firebase_uid).map(a => (
+                                                <div key={a.id} className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
+                                                    <span className="text-gold">{a.asset}</span>
+                                                    <span className="text-gray-500">{new Date(a.created_at).toLocaleDateString()}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-gray-600 italic">No recent activity recorded.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-white/10 text-center">
+                            <span className="text-xs text-gray-600">Changes are applied immediately.</span>
                         </div>
                     </div>
                 </div>
