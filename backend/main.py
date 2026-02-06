@@ -87,12 +87,22 @@ def initialize_paystack_transaction(request: PaystackInitRequest, x_user_id: str
         raise HTTPException(status_code=400, detail="User ID required")
     
     # Paystack Configured for GHS (Ghana Cedis)
-    # Conversion Rate approx 1 USD = 15 GHS
-    if request.amount == 20: 
-        amount_local = 300   # 300 GHS for Monthly
+    # Conversion Rate approx 1 USD = 15 GHS (Dynamic fallback used generally)
+    
+    if abs(request.amount - 2.99) < 0.1:
+        amount_local = 45    # ~ $3 * 15
+        plan_tier = "starter"
+    elif abs(request.amount - 9.99) < 0.1:
+        amount_local = 150   # ~ $10 * 15
+        plan_tier = "active"
+    elif abs(request.amount - 29.99) < 0.1:
+        amount_local = 450   # ~ $30 * 15
+        plan_tier = "advanced"
+    elif request.amount == 20: 
+        amount_local = 300   # Legacy
         plan_tier = "monthly"
     elif request.amount == 204:
-        amount_local = 3000  # 3,000 GHS for Yearly
+        amount_local = 3000  # Legacy
         plan_tier = "yearly"
     else:
         # Fallback for dynamic amounts
@@ -170,17 +180,26 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
             user = db.query(models.User).filter(models.User.firebase_uid == user_id).first()
             if user:
                 now = datetime.datetime.utcnow()
-                days_to_add = 30 if plan_tier == "monthly" else 365
+                
+                # Determine Access Duration
+                if plan_tier == "starter":
+                    days_to_add = 7
+                elif plan_tier in ["active", "advanced", "pro", "monthly"]:
+                    days_to_add = 30
+                elif plan_tier == "yearly":
+                    days_to_add = 365
+                else:
+                    days_to_add = 30 # Default safety fallback
                 
                 if user.subscription_ends_at and user.subscription_ends_at > now:
                      user.subscription_ends_at += datetime.timedelta(days=days_to_add)
                 else:
                      user.subscription_ends_at = now + datetime.timedelta(days=days_to_add)
                 
-                user.plan_tier = "pro"
+                user.plan_tier = "pro" # Grant 'pro' status access for all paid tiers
                 user.credits_balance = 999999 
                 db.commit()
-                print(f"Paystack Success: {user_id} upgraded to Pro ({plan_tier})")
+                print(f"Paystack Success: {user_id} upgraded to Pro ({plan_tier}) for {days_to_add} days")
                 
     return {"status": "success"}
 
