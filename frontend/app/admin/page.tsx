@@ -15,6 +15,7 @@ interface AdminStats {
 interface User {
     id: number;
     email: string;
+    full_name: string;
     plan_tier: string;
     created_at: string;
     credits_balance: number;
@@ -277,8 +278,9 @@ export default function AdminPage() {
                         {users.map(u => (
                             <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
                                 <td className="px-4 py-3">
-                                    <div className="font-bold text-white">{u.email}</div>
-                                    <div className="text-xs text-gray-600 font-mono">{u.id}</div>
+                                    <div className="font-bold text-white text-base">{u.full_name || 'Trader'}</div>
+                                    <div className="text-sm text-gray-400">{u.email}</div>
+                                    <div className="text-[10px] text-gray-600 font-mono">ID: {u.id}</div>
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded text-xs ${u.plan_tier === 'pro' ? 'bg-gold/20 text-gold' : 'bg-gray-800 text-gray-400'}`}>{u.plan_tier.toUpperCase()}</span>
@@ -452,11 +454,12 @@ export default function AdminPage() {
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                    {selectedUser.email}
+                                    {selectedUser.full_name || 'Trader'}
                                     <span className={`text-[10px] px-2 py-0.5 rounded border ${selectedUser.plan_tier === 'pro' ? 'border-gold text-gold' : 'border-gray-600 text-gray-400'}`}>
                                         {selectedUser.plan_tier.toUpperCase()}
                                     </span>
                                 </h3>
+                                <p className="text-sm text-gray-400">{selectedUser.email}</p>
                                 <p className="text-xs text-gray-500 font-mono mt-1">ID: {selectedUser.firebase_uid}</p>
                             </div>
                             <button onClick={() => setIsCreditModalOpen(false)} className="text-gray-400 hover:text-white">✕</button>
