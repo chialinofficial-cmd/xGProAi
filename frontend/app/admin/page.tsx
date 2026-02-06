@@ -46,6 +46,7 @@ export default function AdminPage() {
 
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [aiStats, setAiStats] = useState<any>(null); // New AI Stats State
+    const [finStats, setFinStats] = useState<any>(null); // New Financial Stats
     const [users, setUsers] = useState<User[]>([]);
     const [activity, setActivity] = useState<Analysis[]>([]);
     const [loading, setLoading] = useState(false);
@@ -96,6 +97,10 @@ export default function AdminPage() {
             // 1b. AI Stats
             const aiRes = await fetch(`${apiUrl}/admin/ai/stats`, { headers });
             if (aiRes.ok) setAiStats(await aiRes.json());
+
+            // 1c. Financial Stats
+            const finRes = await fetch(`${apiUrl}/admin/finance/stats`, { headers });
+            if (finRes.ok) setFinStats(await finRes.json());
 
             // 2. Users (Search aware)
             const searchParam = searchQuery ? `&search=${searchQuery}` : '';
@@ -262,6 +267,36 @@ export default function AdminPage() {
                             <Bar dataKey="ms" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
+                </div>
+
+                {/* 1.5 Financial Overview */}
+                <div className="grid md:grid-cols-3 gap-8">
+                     {/* MRR Card */}
+                     <div className="bg-gradient-to-br from-gold/20 to-black border border-gold/30 p-6 rounded-xl flex flex-col justify-center">
+                        <p className="text-gold text-sm uppercase tracking-wider mb-2">Monthly Recurring Revenue</p>
+                        <p className="text-5xl font-bold text-white">
+                            <span className="text-2xl text-gray-400 mr-1">GHS</span>
+                            {finStats?.mrr_ghs?.toLocaleString() || 0}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">Estimated based on active plans</p>
+                     </div>
+
+                     {/* Revenue Breakdown */}
+                     <div className="md:col-span-2 bg-surface-card border border-white/10 p-6 rounded-xl h-[250px]">
+                        <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Revenue by Tier</h3>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={finStats?.revenue_breakdown || []} layout="vertical">
+                                <XAxis type="number" stroke="#4b5563" fontSize={10} hide />
+                                <YAxis dataKey="name" type="category" stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} width={100} />
+                                <RechartsTooltip 
+                                    cursor={{fill: 'transparent'}}
+                                    contentStyle={{ backgroundColor: '#0f1115', borderColor: '#333' }}
+                                    formatter={(value: number) => [`GHS ${value}`, 'Revenue']}
+                                />
+                                <Bar dataKey="value" fill="#d4af37" radius={[0, 4, 4, 0]} barSize={20} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                     </div>
                 </div>
 
                 {/* 2. Visual Analytics */}
