@@ -490,3 +490,61 @@ def get_stats(
         "trial_ends_at": user.trial_ends_at if user else None,
         "subscription_ends_at": user.subscription_ends_at if user else None
     }
+
+
+# --------------------------
+# ADMIN API (Protected)
+# --------------------------
+
+ADMIN_SECRET = "admin123" # Simple protection
+
+def verify_admin(x_admin_secret: str = Header(None)):
+    if x_admin_secret != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Admin Access Denied")
+
+@app.get("/admin/stats")
+def get_admin_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    total_users = db.query(models.User).count()
+    pro_users = db.query(models.User).filter(models.User.plan_tier == "pro").count()
+    total_analyses = db.query(models.Analysis).count()
+    
+    # Calculate revenue (Approximation based on plan tiers, assuming $20 avg for now just for show)
+    # A real implementation would sum the 'payments' table
+    revenue_est = pro_users * 20 
+    
+    return {
+        "total_users": total_users,
+        "pro_users": pro_users,
+        "total_analyses": total_analyses,
+        "revenue_estimated": revenue_est
+    }
+
+@app.get("/admin/users")
+def get_all_users(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    users = db.query(models.User).order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()
+    return users
+
+@app.get("/admin/analyses")
+def get_recent_global_analyses(limit: int = 20, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    # Fetch recent analyses across ALL users
+    analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(limit).all()
+    return analyses
+
+@app.post("/admin/users/{user_id}/upgrade")
+def manual_upgrade_user(user_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Grant Pro for 30 days
+    user.plan_tier = "pro"
+    user.credits_balance = 999999
+    
+    now = datetime.datetime.utcnow()
+    if user.subscription_ends_at and user.subscription_ends_at > now:
+        user.subscription_ends_at += datetime.timedelta(days=30)
+    else:
+        user.subscription_ends_at = now + datetime.timedelta(days=30)
+        
+    db.commit()
+    return {"status": "success", "message": f"User {user.email} upgraded to Pro"}
