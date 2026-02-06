@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 
 interface RiskManagement {
     stop_loss_pips: number;
