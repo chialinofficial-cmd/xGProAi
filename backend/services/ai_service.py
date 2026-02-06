@@ -40,31 +40,28 @@ class AIService:
         You are xGProAi, the world's leading Institutional XAU/USD (Gold) Analyst & Fund Manager.
         
         CRITICAL - GOLD SPECIALIST RULES:
-        1.  **ASSET FORCE:** Assume EVERY chart is **XAU/USD** (Gold). Even if it looks like crypto or stocks, analyze it using Gold's unique market physics (High volatility, Liquidity Grabs, Wick Rejections).
-        2.  **SMC LOGIC:** Use Smart Money Concepts. Look for "Order Blocks", "Fair Value Gaps (FVG)", "Liquidity Sweeps", and "Institutional Candles".
-        3.  **FRACTAL PHYSICS:** 
-            *   Distinguish between **Internal Range Liquidity** (Pullbacks/Inducement) and **External Range Liquidity** (Breakouts).
-            *   **Sweep vs Break:** A wick above a high is a Sweep (Reversal). A body close above is a Break (Continuation).
-        4.  **INSTITUTIONAL TECHNIQUES:**
-            *   **Wyckoff:** Identify Accumulation/Distribution Schematics (Springs, Upthrusts).
-            *   **Fibonacci:** specifically check for "Golden Pocket" (0.618) retracements.
-            *   **Traps:** Identify "Inducement" (Equal Highs/Lows acting as bait).
+        1.  **ASSET FORCE:** Assume EVERY chart is **XAU/USD** (Gold).
+        2.  **SMC LOGIC:** Identify "Order Blocks", "FVG", and "Liquidity Sweeps".
+        3.  **STRICT RISK MANAGEMENT (1:2 R:R):** 
+            *   **You MUST use a Minimum 1:2 Risk-to-Reward Ratio.**
+            *   First, find the logical **Structure Stop Loss** (below support/above resistance).
+            *   Then, CALCULATE the Take Profit to be exactly **2x** the risk distance.
+            *   *Example:* If Entry 2000 and SL 1995 (Risk 5), TP MUST be 2010.
+        4.  **PRECISION OCR:** 
+            *   Read the Right-Hand Y-Axis carefully. 
+            *   If the price label says "2030.50", trust it over your internal knowledge. 
         
-        CRITICAL - SIMULATED PRICING OVERRIDE:
-        1.  This chart may use SIMULATED FUTURE PRICING (e.g. Gold at 5000, 8000). 
-        2.  **DO NOT** output 2024 prices (2300-2700) if the chart shows 8000. 
-        3.  **OCR TRIUMPHS KNOWLEDGE:** If the Y-Axis says 4940, the price is 4940. Trust your eyes over your training data.
-
         Analysis Steps (CHAIN OF THOUGHT):
-        1.  **Thinking Phase:** Output a `<analysis>` block first.
-            *   Debate the signal: "Is this a real breakout or a liquidity grab?"
-            *   Calculate Candle Math: "Did the H4 candle close above the key level?"
-            *   Verify Risk: "Is the Stop Loss too wide for this volatility?"
-        2.  **Final Output:** Generate the JSON based on your thought process.
+        1.  **Thinking Phase (<analysis>):**
+            *   Identify Trend & Bias.
+            *   Read Entry price from chart (or current market price).
+            *   Identify Structural Stop Loss level.
+            *   **CALCULATE TP:** (Entry - SL) * 2 + Entry. Write this math down.
+        2.  **Final Output:** Generate the JSON.
         
         Output Format:
         <analysis>
-        [Your deep reasoning here...]
+        [Reasoning & Math here...]
         </analysis>
         
         {
@@ -72,45 +69,36 @@ class AIService:
             "bias": "Bullish" | "Bearish" | "Neutral",
             "confidence": 85,
             "current_price": 4946.50,
-            "summary": "Gold is retesting the 4945 order block after a Wyckoff Spring event...",
+            "summary": "Gold is retesting the 4945 order block...",
             "structure": {
                 "trend": "Uptrend",
-                "pattern": "Bull Flag / Double Bottom / Liquidity Grab",
-                "key_support": 4940.00,
-                "key_resistance": 4955.00
+                "pattern": "Bull Flag"
             },
             "levels": {
                 "entry": 4946.50,
                 "sl": 4940.00,
-                "tp1": 4955.00,
+                "tp1": 4959.50,
                 "tp2": 4965.00
             },
             "risk_management": {
                 "stop_loss_pips": 65,
                 "recommended_leverage": "1:50",
-                "lot_sizing": {
-                    "equity_1k": "0.01",
-                    "equity_10k": "0.15",
-                    "equity_100k": "1.50"
-                },
-                "management_rules": [
-                    "Move SL to Break Even after 30 pips profit",
-                    "Take 50% partials at TP1 (4955.00)"
-                ]
+                "lot_sizing": { "equity_1k": "0.01", "equity_10k": "0.15", "equity_100k": "1.50" },
+                "management_rules": ["Move SL to BE at 1:1", "Take Partial at TP1"]
             },
             "technique_confluence": {
-                "fibonacci_level": "Rejection at 0.618 Golden Pocket",
-                "wyckoff_phase": "Potential Spring in Accumulation Schematic #1",
-                "liquidity_trap": "Equal highs at 4980 acting as magnet (Inducement)"
+                "fibonacci_level": "0.618",
+                "wyckoff_phase": "Spring",
+                "liquidity_trap": "Equal Highs"
             },
             "metrics": {
-                "risk_reward": "1:2.5",
-                "volatility": "High (NY Session)",
-                "sentiment": "Institutional Buying"
+                "risk_reward": "1:2",
+                "volatility": "High",
+                "sentiment": "Bullish"
             },
              "market_context": {
-                "session": "New York / London Overlap",
-                "warning": "Watch for news manipulation wicks."
+                "session": "NY Session",
+                "warning": "News impact expected"
             }
         }
         """
@@ -123,7 +111,7 @@ class AIService:
                 print(f"Attempting analysis with model: {model}")
                 response = self.client.messages.create(
                     model=model,
-                    max_tokens=3000, # Increased for CoT
+                    max_tokens=3000,
                     system=system_prompt,
                     messages=[
                         {
@@ -139,7 +127,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": "Analyze this XAU/USD chart as a Fund Manager. THINK first in <analysis> tags, then output JSON."
+                                    "text": "Analyze this XAU/USD chart. Ensure 1:2 Risk/Reward. THINK in <analysis> first."
                                 }
                             ],
                         }
@@ -154,8 +142,7 @@ class AIService:
                 import json
                 import ast
                 
-                # 1. Extract JSON block (Regex specifically to ignore the <analysis> tag logic)
-                # Look for the LAST matching JSON object to avoid capturing examples in text
+                # 1. Extract JSON block
                 json_candidates = re.findall(r'\{.*\}', text_response, re.DOTALL)
                 
                 # Extract Analysis Block (Chain of Thought)
@@ -163,7 +150,7 @@ class AIService:
                 analysis_reasoning = analysis_match.group(1).strip() if analysis_match else "Reasoning not provided."
 
                 if json_candidates:
-                    json_str = json_candidates[-1] # Take the last one, usually the final output
+                    json_str = json_candidates[-1]
                 else:
                     json_str = text_response
                 
@@ -172,27 +159,23 @@ class AIService:
                 
                 try:
                     data = json.loads(json_str)
-                    # Inject reasoning into the data object
                     data['reasoning'] = analysis_reasoning
                 except json.JSONDecodeError:
-                    # Fallback: Try parsing as Python dictionary
                     try:
                         py_dict = ast.literal_eval(json_str)
-                        data = py_dict # Start working with dict
+                        data = py_dict
                         data['reasoning'] = analysis_reasoning
-                        json_str = json.dumps(py_dict) # Update string for return
+                        json_str = json.dumps(py_dict)
                     except (ValueError, SyntaxError):
-                        # Last resort: Regex cleanup
-                        if "'" in json_str and '"' not in json_str: 
-                             json_str = json_str.replace("'", '"')
-                        json_str = re.sub(r',\s*}', '}', json_str)
-                        json_str = re.sub(r',\s*]', ']', json_str)
-                        try:
-                             data = json.loads(json_str)
-                        except:
-                             # If we have the <analysis> but failed JSON, log it
-                             print(f"Analysis CoT captured but JSON failed: {text_response[:200]}...")
-                             raise Exception("Failed to parse AI response")
+                         if "'" in json_str and '"' not in json_str: 
+                              json_str = json_str.replace("'", '"')
+                         json_str = re.sub(r',\s*}', '}', json_str)
+                         json_str = re.sub(r',\s*]', ']', json_str)
+                         try:
+                              data = json.loads(json_str)
+                         except:
+                              print(f"Analysis CoT captured but JSON failed: {text_response[:200]}...")
+                              raise Exception("Failed to parse AI response")
 
                 # 3. Post-Processing: Hallucination Check & SMC Validation
                 try:
@@ -224,28 +207,71 @@ class AIService:
                                 
                                 # FIX: Re-center around visual labels
                                 new_entry = avg_label
-                                is_bullish = data.get("bias", "Neutral") == "Bullish"
-                                
-                                # Gold Specific Stops (wider due to volatility)
-                                sl_dist = 6.0 # 60 pips for Gold
-                                tp_dist = 12.0 # 120 pips
-                                
-                                if is_bullish:
-                                    levels["entry"] = round(new_entry, 2)
-                                    levels["sl"] = round(new_entry - sl_dist, 2)
-                                    levels["tp1"] = round(new_entry + tp_dist, 2)
-                                    levels["tp2"] = round(new_entry + (tp_dist * 1.5), 2)
-                                else:
-                                    levels["entry"] = round(new_entry, 2)
-                                    levels["sl"] = round(new_entry + sl_dist, 2)
-                                    levels["tp1"] = round(new_entry - tp_dist, 2)
-                                    levels["tp2"] = round(new_entry - (tp_dist * 1.5), 2)
-                                    
-                                data["levels"] = levels
+                                data["levels"]["entry"] = round(new_entry, 2)
                                 data["summary"] += " [System: Prices corrected to match Chart Y-Axis.]"
+                                # Note: Actual levels will be fixed by the Universal Logic Enforcement below
+                                entry_price = round(new_entry, 2)
+                            else:
+                                entry_price = entry_float
+
+                            # 4. UNIVERSAL LOGIC ENFORCEMENT & 1:2 R:R FORCE
+                            bias = data.get("bias", "Neutral")
+                            levels = data.get("levels", {})
+                            
+                            # Get SL (Trust AI's structural read unless huge error)
+                            sl_price = float(str(levels.get("sl", 0) or 0).replace(",", ""))
+                            
+                            is_bullish = "Bullish" in bias
+                            is_bearish = "Bearish" in bias
+                            
+                            valid_trade = False
+                            
+                            if is_bullish and entry_price > sl_price:
+                                risk = entry_price - sl_price
+                                valid_trade = True
+                                # FORCE 1:2 RR
+                                tp_price = entry_price + (risk * 2)
+                                levels["tp1"] = round(tp_price, 2)
+                                levels["tp2"] = round(entry_price + (risk * 3), 2)
+                                levels["entry"] = entry_price
+                                levels["sl"] = sl_price
                                 
-                                # Re-dump to string
-                                json_str = json.dumps(data)
+                            elif is_bearish and entry_price < sl_price:
+                                risk = sl_price - entry_price
+                                valid_trade = True
+                                # FORCE 1:2 RR
+                                tp_price = entry_price - (risk * 2)
+                                levels["tp1"] = round(tp_price, 2)
+                                levels["tp2"] = round(entry_price - (risk * 3), 2)
+                                levels["entry"] = entry_price
+                                levels["sl"] = sl_price
+                            
+                            # If invalid logic (e.g. Bullish but SL > Entry), reset to default 1:2
+                            if not valid_trade and (is_bullish or is_bearish):
+                                print(f"Invalid Logic Detected ({bias}, Entry: {entry_price}, SL: {sl_price}). Resetting to default 60pip SL.")
+                                sl_pips = 6.0 # 60 pips gold standard
+                                if is_bullish:
+                                    levels["entry"] = entry_price
+                                    levels["sl"] = round(entry_price - sl_pips, 2)
+                                    levels["tp1"] = round(entry_price + (sl_pips * 2), 2)
+                                    levels["tp2"] = round(entry_price + (sl_pips * 3), 2)
+                                else:
+                                    levels["entry"] = entry_price
+                                    levels["sl"] = round(entry_price + sl_pips, 2)
+                                    levels["tp1"] = round(entry_price - (sl_pips * 2), 2)
+                                    levels["tp2"] = round(entry_price - (sl_pips * 3), 2)
+                            
+                            # Update Metrics
+                            if is_bullish or is_bearish:
+                                data["metrics"]["risk_reward"] = "1:2 (Fixed)"
+                            
+                            data["levels"] = levels
+                            
+                            # Re-dump to string
+                            json_str = json.dumps(data)
+                            
+                        except Exception as logic_err:
+                            print(f"Logic enforcement error: {logic_err}")
 
                         except Exception as e:
                             print(f"Error during hallucination fix: {e}")
