@@ -38,6 +38,22 @@ app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 @app.get("/uploads/{filename}")
 # ... (rest of code)
 
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # Paystack
 @app.post("/paystack/initialize")
 async def initialize_paystack(payload: dict, x_user_id: str = Header(None)):
