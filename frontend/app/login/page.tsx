@@ -5,12 +5,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../../lib/firebase';
+import { useToast } from '../../context/ToastContext';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { showToast } = useToast();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,10 +20,11 @@ export default function LoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
+            showToast('Welcome back!', 'success');
             router.push('/dashboard');
         } catch (err: any) {
             console.error(err);
-            alert("Login failed: " + err.message);
+            showToast("Login failed: " + err.message, 'error');
         } finally {
             setLoading(false);
         }
@@ -31,10 +34,11 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await signInWithPopup(auth, googleProvider);
+            showToast('Welcome back!', 'success');
             router.push('/dashboard');
         } catch (err: any) {
             console.error(err);
-            alert("Google Login failed: " + err.message);
+            showToast("Google Login failed: " + err.message, 'error');
         } finally {
             setLoading(false);
         }

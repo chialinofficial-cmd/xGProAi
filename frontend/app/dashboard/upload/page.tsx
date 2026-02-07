@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { usePayment } from '../../hooks/usePayment';
+import { useToast } from '../../../context/ToastContext';
 
 export default function UploadPage() {
     const { user } = useAuth();
@@ -16,6 +17,7 @@ export default function UploadPage() {
     const [isLimitReached, setIsLimitReached] = useState(false);
     const [equity, setEquity] = useState<string>('1000');
     const [isDragging, setIsDragging] = useState(false);
+    const { showToast } = useToast();
 
     // Drag Actions
     const handleDragOver = (e: React.DragEvent) => {
@@ -61,7 +63,7 @@ export default function UploadPage() {
 
     const uploadFile = async (file: File) => {
         if (!user) {
-            alert("Please login to upload charts");
+            showToast("Please login to upload charts", 'error');
             return;
         }
 
@@ -153,9 +155,9 @@ export default function UploadPage() {
             console.error("Error:", error);
             if (!isLimitReached) {
                 if (error.name === 'AbortError') {
-                    alert("Analysis timed out. The AI is taking longer than expected. Please try again.");
+                    showToast("Analysis timed out. The AI is taking longer than expected. Please try again.", 'error');
                 } else {
-                    alert(`Analysis failed: ${error.message}`);
+                    showToast(`Analysis failed: ${error.message}`, 'error');
                 }
             }
             setIsUploading(false);

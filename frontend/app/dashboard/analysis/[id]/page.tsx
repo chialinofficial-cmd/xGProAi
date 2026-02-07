@@ -10,6 +10,7 @@ import {
 } from '@/components/dashboard/AnalysisWidgets';
 import Skeleton from '@/components/ui/Skeleton';
 import TradingViewChart from '@/components/dashboard/TradingViewChart';
+import { useToast } from '../../../../context/ToastContext';
 
 interface RiskManagement {
     stop_loss_pips: number;
@@ -59,6 +60,7 @@ export default function AnalysisPage() {
     const params = useParams();
     const router = useRouter();
     const id = params?.id as string;
+    const { showToast } = useToast();
 
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [loading, setLoading] = useState(true);
@@ -180,7 +182,7 @@ export default function AnalysisPage() {
             pdf.save(`xGProAi-Analysis-${analysis.asset}-${analysis.id}.pdf`);
         } catch (err) {
             console.error("PDF Export failed", err);
-            alert("Failed to generate PDF. CORS issues with images may occur on localhost.");
+            showToast("Failed to generate PDF. CORS issues with images may occur.", 'error');
         }
     };
 
@@ -199,7 +201,7 @@ Manage Risk Responsibly! 🛡️
 via xGProAi
         `;
         navigator.clipboard.writeText(text);
-        alert("Analysis copied to clipboard!");
+        showToast("Analysis copied to clipboard!", 'success');
     };
 
     const handleResultToggle = async (result: 'win' | 'loss') => {
@@ -226,7 +228,7 @@ via xGProAi
             console.error("Error updating result:", error);
             // Revert on error
             setAnalysis({ ...analysis, result: previousResult });
-            alert("Failed to update result. Please try again.");
+            showToast("Failed to update result. Please try again.", 'error');
         }
     };
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useToast } from '../../context/ToastContext';
 
 interface AdminStats {
     total_users: number;
@@ -55,6 +56,7 @@ export default function AdminPage() {
     const [activity, setActivity] = useState<Analysis[]>([]);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const { showToast } = useToast();
 
     // Tabs State
     const [activeTab, setActiveTab] = useState('overview');
@@ -152,13 +154,6 @@ export default function AdminPage() {
 
     const handleSearch = () => {
         fetchData(accessCode);
-    };
-
-    const [toast, setToast] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
-
-    const showToast = (msg: string, type: 'success' | 'error') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
     };
 
     const performAction = async (endpoint: string, method: string, body?: any) => {
@@ -589,16 +584,6 @@ export default function AdminPage() {
                         <div className="pt-4 border-t border-white/10 text-center">
                             <span className="text-xs text-gray-600">Changes are applied immediately.</span>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Toast Notification */}
-            {toast && (
-                <div className={`fixed bottom-8 right-8 px-6 py-3 rounded-lg shadow-xl border animate-in slide-in-from-bottom-5 fade-in duration-300 z-50 ${toast.type === 'success' ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
-                    <div className="flex items-center gap-3">
-                        <span className="text-lg">{toast.type === 'success' ? '✓' : '⚠'}</span>
-                        <p className="font-bold text-sm">{toast.msg}</p>
                     </div>
                 </div>
             )}

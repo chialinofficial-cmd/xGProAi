@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../../lib/firebase';
+import { useToast } from '../../context/ToastContext';
 
 export default function SignupPage() {
     const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ export default function SignupPage() {
     const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { showToast } = useToast();
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,10 +30,11 @@ export default function SignupPage() {
             }
 
             // Redirect to Dashboard
+            showToast('Account created successfully!', 'success');
             router.push('/dashboard');
         } catch (err: any) {
             console.error(err);
-            alert("Signup failed: " + err.message);
+            showToast("Signup failed: " + err.message, 'error');
         } finally {
             setLoading(false);
         }
@@ -41,10 +44,11 @@ export default function SignupPage() {
         setLoading(true);
         try {
             await signInWithPopup(auth, googleProvider);
+            showToast('Account created successfully!', 'success');
             router.push('/dashboard');
         } catch (err: any) {
             console.error(err);
-            alert("Google Login failed: " + err.message);
+            showToast("Google Login failed: " + err.message, 'error');
         } finally {
             setLoading(false);
         }
