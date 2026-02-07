@@ -343,6 +343,8 @@ def fix_database_schema(db: Session = Depends(get_db)):
         models.Base.metadata.create_all(bind=engine)
         return {"status": "success", "message": "Database schema reset successfully. All data cleared."}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Schema reset failed: {str(e)}")
+
 @app.get("/force-migrate")
 def force_migration(db: Session = Depends(get_db)):
     """
