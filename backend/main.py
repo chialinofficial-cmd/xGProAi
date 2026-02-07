@@ -43,7 +43,6 @@ def read_root():
 def startup_event():
     db = SessionLocal()
     try:
-    try:
         # Check/Add columns to 'analyses' table (Auto-Migration)
         analysis_migrations = [
             ("result", "VARCHAR"),
