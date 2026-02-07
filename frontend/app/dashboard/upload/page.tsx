@@ -76,7 +76,7 @@ export default function UploadPage() {
 
         // ... (keep intervals) ...
         uploadInterval = setInterval(() => {
-             setUploadProgress(prev => {
+            setUploadProgress(prev => {
                 if (prev >= 35) {
                     if (uploadInterval) clearInterval(uploadInterval);
                     return 35;
@@ -109,7 +109,8 @@ export default function UploadPage() {
             const timeoutId = setTimeout(() => controller.abort(), 120000);
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
-            
+            console.log("Debug: Using API URL:", apiUrl);
+
             // ... (fetch) ...
             const userEmail = user.email || user.providerData?.[0]?.email || '';
             console.log("Debug: Uploading for", user.uid, "Email:", userEmail);
@@ -138,9 +139,9 @@ export default function UploadPage() {
                     router.push(`/dashboard/analysis/${data.id}`);
                 }, 800);
             } else {
-                 // ... handle error ...
-                 const errorData = await response.json();
-                 if (response.status === 403 && errorData.detail.includes("Daily limit reached")) {
+                // ... handle error ...
+                const errorData = await response.json();
+                if (response.status === 403 && errorData.detail.includes("Daily limit reached")) {
                     setIsLimitReached(true);
                     setIsUploading(false);
                     return;
@@ -148,8 +149,8 @@ export default function UploadPage() {
                 throw new Error(errorData.detail || `Status: ${response.status}`);
             }
         } catch (error: any) {
-             // ... handle catch ...
-             console.error("Error:", error);
+            // ... handle catch ...
+            console.error("Error:", error);
             if (!isLimitReached) {
                 if (error.name === 'AbortError') {
                     alert("Analysis timed out. The AI is taking longer than expected. Please try again.");
@@ -181,7 +182,7 @@ export default function UploadPage() {
 
             {/* ... (Loading Overlay - implied kept by not selecting it) ... */}
             {isUploading && (
-                  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-surface-card border border-border-subtle rounded-2xl p-12 max-w-2xl w-full text-center relative overflow-hidden shadow-2xl">
                         {/* Background Glow */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none"></div>
@@ -243,8 +244,8 @@ export default function UploadPage() {
                     onDrop={handleDrop}
                     onClick={(e) => {
                         // Prevent click when clicking the input itself
-                        if((e.target as HTMLElement).tagName !== 'INPUT') {
-                             !isUploading && fileInputRef.current?.click();
+                        if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                            !isUploading && fileInputRef.current?.click();
                         }
                     }}
                     className={`
@@ -260,17 +261,17 @@ export default function UploadPage() {
                     </div>
 
                     <div className="flex flex-col items-center gap-4 mt-8 w-full max-w-sm z-20">
-                    
+
                         {/* 💰 EQUITY INPUT 💰 */}
-                        <div 
+                        <div
                             className="w-full bg-black/40 border border-gold/20 rounded-lg p-4 mb-4 text-left backdrop-blur-sm"
                             onClick={(e) => e.stopPropagation()} // Stop click bubbling to upload
                         >
                             <label className="text-gold text-xs font-bold uppercase tracking-wider mb-2 block">
                                 Account Balance ($)
                             </label>
-                            <input 
-                                type="number" 
+                            <input
+                                type="number"
                                 value={equity}
                                 onChange={(e) => setEquity(e.target.value)}
                                 className="w-full bg-transparent border-b border-gray-600 focus:border-gold text-white text-xl font-mono outline-none py-1 placeholder-gray-700"

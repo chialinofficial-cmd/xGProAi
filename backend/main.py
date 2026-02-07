@@ -32,7 +32,11 @@ logger = logging.getLogger(__name__)
 # Create Tables on Startup
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
+app = FastAPI(title="xGProAi Backend", version="1.0")
+
+@app.get("/")
+def read_root():
+    return {"message": "xGProAi Backend is Running", "docs_url": "/docs"}
 
 # Startup Event for Migration
 @app.on_event("startup")
