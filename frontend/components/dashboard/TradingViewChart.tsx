@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, CrosshairMode, LineStyle } from 'lightweight-charts';
+import { createChart, ColorType, CrosshairMode } from 'lightweight-charts';
 
 interface TradingViewChartProps {
     symbol: string;
@@ -73,7 +73,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
             rightPriceScale: {
                 borderColor: '#2a2a2a',
             },
-        });
+        }) as any;
 
         const candleSeries = chart.addCandlestickSeries({
             upColor: '#22c55e',
@@ -91,7 +91,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
                 price: levels.entry,
                 color: '#3b82f6',
                 lineWidth: 2,
-                lineStyle: LineStyle.Solid,
+                lineStyle: 0,
                 axisLabelVisible: true,
                 title: 'ENTRY',
             });
@@ -101,7 +101,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
                 price: levels.sl,
                 color: '#ef4444',
                 lineWidth: 2,
-                lineStyle: LineStyle.Solid,
+                lineStyle: 0,
                 axisLabelVisible: true,
                 title: 'SL',
             });
@@ -111,7 +111,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
                 price: levels.tp1,
                 color: '#22c55e',
                 lineWidth: 2,
-                lineStyle: LineStyle.Dashed,
+                lineStyle: 2, // Dashed
                 axisLabelVisible: true,
                 title: 'TP1',
             });
@@ -121,7 +121,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
                 price: levels.tp2,
                 color: '#22c55e',
                 lineWidth: 1,
-                lineStyle: LineStyle.Dotted,
+                lineStyle: 1, // Dotted
                 axisLabelVisible: true,
                 title: 'TP2',
             });
