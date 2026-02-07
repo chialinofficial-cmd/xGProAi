@@ -572,7 +572,7 @@ async def analyze_chart(
         return db_analysis
     except Exception as e:
          logger.error(f"Database Save Failed: {e}")
-         raise HTTPException(status_code=500, detail="Failed to save analysis results.")
+         raise HTTPException(status_code=500, detail=f"Failed to save results: {str(e)}")
 
 @app.get("/analyses", response_model=list[AnalysisResponse])
 def get_analyses(
