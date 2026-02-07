@@ -10,6 +10,7 @@ import shutil
 import os
 import datetime
 import json
+from services.quant_service import QuantService
 from auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.staticfiles import StaticFiles
 
@@ -819,3 +820,35 @@ def extend_user_trial(user_id: int, extension: TrialExtension, db: Session = Dep
     
     db.commit()
     return {"status": "success", "new_expiry": user.trial_ends_at}
+
+@app.get("/market-data/{symbol}")
+async def get_market_data(symbol: str):
+    """
+    Fetches live OHLCV data for the chart.
+    """
+    try:
+        # Decode symbol if needed (e.g. XAU-USD -> XAU/USD)
+        clean_symbol = symbol.replace("-", "/")
+        
+        # Instantiate service
+        quant = QuantService()
+        
+        # Fetch Data
+        df = await quant.fetch_ohlcv(clean_symbol)
+        
+        # Format for Lightweight Charts
+        data = []
+        if not df.empty:
+            for _, row in df.iterrows():
+                data.append({
+                    "time": int(row['timestamp'].timestamp()),
+                    "open": row['open'],
+                    "high": row['high'],
+                    "low": row['low'],
+                    "close": row['close']
+                })
+                
+        return data
+    except Exception as e:
+        logger.error(f"Market Data Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

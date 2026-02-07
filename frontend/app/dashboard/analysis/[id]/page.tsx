@@ -8,6 +8,8 @@ import {
     SentimentWidget, QuantWidget, SMCWidget,
     QuantContext, SentimentContext, SMCContext
 } from '@/components/dashboard/AnalysisWidgets';
+import Skeleton from '@/components/ui/Skeleton';
+import TradingViewChart from '@/components/dashboard/TradingViewChart';
 
 interface RiskManagement {
     stop_loss_pips: number;
@@ -60,7 +62,7 @@ export default function AnalysisPage() {
 
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'technical' | 'chart'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'technical' | 'chart' | 'interactive'>('overview');
     const [auditLog, setAuditLog] = useState<string[]>([]); // For "Copy" feedback
 
     useEffect(() => {
@@ -97,8 +99,30 @@ export default function AnalysisPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin"></div>
+            <div className="animate-fade-in space-y-6 pb-12">
+                {/* Header Skeleton */}
+                <div className="flex justify-between items-center">
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-10 w-64" />
+                    </div>
+                    <div className="flex gap-2">
+                        <Skeleton className="h-10 w-24" />
+                        <Skeleton className="h-10 w-24" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left Col Skeleton */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <Skeleton className="h-[400px] w-full rounded-2xl" />
+                        <Skeleton className="h-[200px] w-full rounded-2xl" />
+                    </div>
+                    {/* Right Col Skeleton */}
+                    <div className="lg:col-span-8">
+                        <Skeleton className="h-[600px] w-full rounded-2xl" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -277,7 +301,7 @@ via xGProAi
                 {/* LEFT COLUMN: The Signal & Key Metrics */}
                 <div className="lg:col-span-4 space-y-6">
                     {/* Main Signal Card */}
-                    <div className={`bg-surface-card border ${borderColor} rounded-2xl p-6 relative overflow-hidden shadow-2xl`}>
+                    <div className={`glass-card border ${borderColor} rounded-2xl p-6 relative overflow-hidden shadow-2xl`}>
                         {/* Background Glow */}
                         <div className={`absolute top-0 right-0 w-32 h-32 ${bgGradient} blur-3xl rounded-full -mr-10 -mt-10 pointer-events-none`}></div>
 
@@ -331,7 +355,7 @@ via xGProAi
                     </div>
 
                     {/* AI Summary Card */}
-                    <div className="bg-surface-card border border-border-subtle rounded-2xl p-6">
+                    <div className="glass-panel border border-border-subtle rounded-2xl p-6">
                         <h3 className="text-gold font-bold mb-3 flex items-center gap-2">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                             AI Analysis
@@ -362,12 +386,18 @@ via xGProAi
                             onClick={() => setActiveTab('chart')}
                             className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'chart' ? 'bg-gold text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
-                            Original Chart
+                            Screenshot
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('interactive')}
+                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'interactive' ? 'bg-gold text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            Interactive Chart
                         </button>
                     </div>
 
                     {/* Tab Content Area */}
-                    <div className="bg-surface-card border border-border-subtle rounded-2xl p-1 flex-grow overflow-hidden relative min-h-[500px]">
+                    <div className="glass-panel border border-border-subtle rounded-2xl p-1 flex-grow overflow-hidden relative min-h-[500px]">
 
                         {/* 1. OVERVIEW TAB */}
                         {activeTab === 'overview' && (
@@ -612,6 +642,23 @@ via xGProAi
                                 <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur text-white/50 text-xs px-2 py-1 rounded pointer-events-none">
                                     Original Screenshot
                                 </div>
+                            </div>
+                        )}
+
+                        {/* 4. INTERACTIVE CHART TAB */}
+                        {activeTab === 'interactive' && (
+                            <div className="h-full w-full animate-fade-in relative z-0">
+                                {analysis && (
+                                    <TradingViewChart
+                                        symbol={analysis.asset}
+                                        levels={{
+                                            entry: analysis.entry,
+                                            sl: analysis.sl,
+                                            tp1: analysis.tp1,
+                                            tp2: analysis.tp2
+                                        }}
+                                    />
+                                )}
                             </div>
                         )}
 
