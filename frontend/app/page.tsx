@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './context/AuthContext';
+import ParticlesBackground from '../components/ParticlesBackground';
 
 export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
@@ -136,13 +137,14 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      {/* Hero Section */}
       <main
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className="flex-grow flex flex-col items-center justify-center text-center px-4 pt-20 pb-16 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-surface-end to-background relative overflow-hidden"
       >
+        <ParticlesBackground />
+
         <input
           type="file"
           ref={fileInputRef}
