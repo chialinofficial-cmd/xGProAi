@@ -24,8 +24,9 @@ class QuantService:
             if symbol == "XAU/USD":
                 mapped_symbol = "XAU/USD" 
             
-            # Fetch
-            ohlcv = self.exchange.fetch_ohlcv(mapped_symbol, timeframe, limit=limit)
+            # Fetch (Async Wrapper)
+            # Run blocking CCXT call in a separate thread to avoid blocking the event loop
+            ohlcv = await asyncio.to_thread(self.exchange.fetch_ohlcv, mapped_symbol, timeframe, limit=limit)
             
             # Convert to Pandas DataFrame
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])

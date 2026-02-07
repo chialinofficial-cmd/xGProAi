@@ -20,7 +20,7 @@ class Analysis(Base):
     sentiment = Column(String, nullable=True)
     user_id = Column(String, index=True) # Firebase UID
     processing_time_ms = Column(Integer, nullable=True) # AI Latency
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 
 class User(Base):
     __tablename__ = "users"

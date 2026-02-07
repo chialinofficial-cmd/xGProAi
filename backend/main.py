@@ -50,6 +50,15 @@ def startup_event():
             except Exception as e:
                 logger.error(f"Migration Failed: {e}")
                 db.rollback()
+
+        # Optimize: Ensure Index on created_at
+        try:
+            logger.info("Checking/Creating Index on analyses.created_at...")
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_analyses_created_at ON analyses (created_at)"))
+            db.commit()
+        except Exception as e:
+             logger.warning(f"Index Creation Failed (might already exist): {e}")
+             db.rollback()
     except Exception as e:
         logger.error(f"Startup Check Failed: {e}")
     finally:

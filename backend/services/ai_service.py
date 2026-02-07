@@ -7,6 +7,10 @@ import logging
 
 load_dotenv()
 
+import logging
+import io
+from PIL import Image
+
 logger = logging.getLogger(__name__)
 
 class AIService:
@@ -26,7 +30,57 @@ class AIService:
             ]
         else:
             self.client = None
+            self.client = None
             self.models_to_try = []
+
+    def resize_image_if_needed(self, image_path, max_size=1024):
+        """
+        Resizes image to max_size (width or height) to optimize payload and speed.
+        Returns bytes of resized image.
+        """
+        try:
+            with Image.open(image_path) as img:
+                # Convert to RGB if needed
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                    
+                width, height = img.size
+                if width > max_size or height > max_size:
+                    ratio = min(max_size / width, max_size / height)
+                    new_size = (int(width * ratio), int(height * ratio))
+                    img = img.resize(new_size, Image.Resampling.LANCZOS)
+                    logger.info(f"Resized image from {width}x{height} to {new_size}")
+                
+                # Save to bytes
+                img_byte_arr = io.BytesIO()
+                img.save(img_byte_arr, format='JPEG', quality=85)
+                return img_byte_arr.getvalue()
+        except Exception as e:
+            logger.error(f"Resize failed: {e}")
+            with open(image_path, "rb") as f:
+                return f.read()
+
+    def resize_image_if_needed(self, image_path, max_size=1024):
+        """
+        Resizes image to max_size (width or height) to optimize payload and speed.
+        Returns bytes of resized image.
+        """
+        with Image.open(image_path) as img:
+            # Convert to RGB if needed (e.g. RGBA PNGs)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+                
+            width, height = img.size
+            if width > max_size or height > max_size:
+                ratio = min(max_size / width, max_size / height)
+                new_size = (int(width * ratio), int(height * ratio))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+                logger.info(f"Resized image from {width}x{height} to {new_size}")
+            
+            # Save to bytes
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='JPEG', quality=85) # Optimize quality too
+            return img_byte_arr.getvalue()
 
     def analyze_chart(self, image_path, equity=1000.0, quant_data=None, sentiment_data=None):
         if not self.client:
@@ -38,8 +92,18 @@ class AIService:
             mime_type = "image/jpeg" # Fallback
 
         # Read and encode image to base64
-        with open(image_path, "rb") as image_file:
-            image_data = base64.b64encode(image_file.read()).decode("utf-8")
+        # with open(image_path, "rb") as image_file:
+        #     image_data = base64.b64encode(image_file.read()).decode("utf-8")
+        
+        # Optimize Image Size for Speed
+        try:
+             optimized_image_bytes = self.resize_image_if_needed(image_path)
+             image_data = base64.b64encode(optimized_image_bytes).decode("utf-8")
+             mime_type = "image/jpeg" # We force convert to JPEG in resizer
+        except Exception as e:
+             logger.error(f"Image Optimization Failed: {e}. Falling back to raw.")
+             with open(image_path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
         # Format Context Strings
         quant_str = "Unavailable"
