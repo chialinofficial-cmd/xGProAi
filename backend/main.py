@@ -33,6 +33,15 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # ... (Previous imports)
 
 # Custom Image Serving
