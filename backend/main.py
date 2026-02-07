@@ -83,6 +83,26 @@ def startup_event():
                 db.rollback()
                 # logger.debug(f"Skipped {col_name} (likely exists)")
 
+        # Optimize: Check/Add columns to 'analyses' table (Auto-Migration)
+        analysis_migrations = [
+            ("result", "VARCHAR"),
+            ("risk_reward", "VARCHAR"),
+            ("sentiment", "VARCHAR"),
+            ("processing_time_ms", "INTEGER"),
+            ("entry", "FLOAT"),
+            ("sl", "FLOAT"),
+            ("tp1", "FLOAT"),
+            ("tp2", "FLOAT")
+        ]
+
+        for col_name, col_type in analysis_migrations:
+            try:
+                db.execute(text(f"ALTER TABLE analyses ADD COLUMN {col_name} {col_type}"))
+                db.commit()
+                logger.info(f"Migrated: Added {col_name} to analyses")
+            except Exception as e:
+                db.rollback()
+
     except Exception as e:
         logger.error(f"Startup Check Failed: {e}")
     finally:
