@@ -62,8 +62,27 @@ def startup_event():
             db.execute(text("CREATE INDEX IF NOT EXISTS ix_analyses_created_at ON analyses (created_at)"))
             db.commit()
         except Exception as e:
-             logger.warning(f"Index Creation Failed (might already exist): {e}")
-             db.rollback()
+            logger.warning(f"Index Creation Failed (might already exist): {e}")
+            db.rollback()
+
+        # Optimize: Check/Add columns to 'users' table (Auto-Migration)
+        # We try to add columns one by one. If they exist, it fails and we rollback/ignore.
+        column_migrations = [
+            ("plan_tier", "VARCHAR DEFAULT 'trial'"),
+            ("credits_balance", "INTEGER DEFAULT 3"),
+            ("daily_usage_count", "INTEGER DEFAULT 0"),
+            ("last_usage_date", "TIMESTAMP")
+        ]
+        
+        for col_name, col_type in column_migrations:
+            try:
+                db.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                db.commit()
+                logger.info(f"Migrated: Added {col_name} to users")
+            except Exception as e:
+                db.rollback()
+                # logger.debug(f"Skipped {col_name} (likely exists)")
+
     except Exception as e:
         logger.error(f"Startup Check Failed: {e}")
     finally:
@@ -573,31 +592,38 @@ def get_stats(
     db: Session = Depends(get_db),
     x_user_id: str = Header(None)
 ):
-    if not x_user_id:
+    try:
+        if not x_user_id:
+            return {
+                "total_analyses": 0,
+                "charts_analyzed": 0,
+                "ai_responses": 0,
+                "credits_remaining": 0,
+                "plan_tier": "unknown"
+            }
+
+        # Fetch User Freshly
+        user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
+        tier = user.plan_tier if user else "free"
+        credits = user.credits_balance if user else 0
+        
+        count = db.query(models.Analysis).filter(models.Analysis.user_id == x_user_id).count()
+
         return {
-            "total_analyses": 0,
-            "charts_analyzed": 0,
-            "ai_responses": 0,
-            "credits_remaining": 0,
-            "plan_tier": "unknown"
+            "total_analyses": count,
+            "charts_analyzed": count, 
+            "ai_responses": count,
+            "credits_remaining": credits,
+            "plan_tier": tier,
+            "trial_ends_at": user.trial_ends_at if user else None,
+            "subscription_ends_at": user.subscription_ends_at if user else None
         }
-
-    # Fetch User Freshly
-    user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
-    tier = user.plan_tier if user else "free"
-    credits = user.credits_balance if user else 0
-    
-    count = db.query(models.Analysis).filter(models.Analysis.user_id == x_user_id).count()
-
-    return {
-        "total_analyses": count,
-        "charts_analyzed": count, 
-        "ai_responses": count,
-        "credits_remaining": credits,
-        "plan_tier": tier,
-        "trial_ends_at": user.trial_ends_at if user else None,
-        "subscription_ends_at": user.subscription_ends_at if user else None
-    }
+    except Exception as e:
+        logger.error(f"Stats Error: {e}")
+        return {
+            "total_analyses": 0, "charts_analyzed": 0, "ai_responses": 0, 
+            "credits_remaining": 0, "plan_tier": "error"
+        }
 
 
 # --------------------------
