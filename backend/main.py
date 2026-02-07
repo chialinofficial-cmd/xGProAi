@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status, Header, Form, Request
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
@@ -36,15 +37,14 @@ app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 
 # Custom Image Serving
 @app.get("/uploads/{filename}")
-# ... (rest of code)
-
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_uploaded_file(filename: str):
+    file_path = os.path.join("uploads", filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    # Fallback to tmp for serverless if needed, or just return 404
+    if os.path.exists(os.path.join("/tmp", filename)):
+        return FileResponse(os.path.join("/tmp", filename))
+    raise HTTPException(status_code=404, detail="File not found")
 
 # Dependency
 def get_db():
@@ -142,13 +142,6 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
                 
     return {"status": "success"}
 
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
