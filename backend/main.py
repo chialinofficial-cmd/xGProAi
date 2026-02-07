@@ -43,17 +43,28 @@ def read_root():
 def startup_event():
     db = SessionLocal()
     try:
-        # Check if 'result' column exists in 'analyses' table
-        result = db.execute(text("PRAGMA table_info(analyses)")).fetchall()
-        columns = [row[1] for row in result]
-        if "result" not in columns:
-            logger.info("Migrating Schema: Adding 'result' column to analyses table...")
+    try:
+        # Check/Add columns to 'analyses' table (Auto-Migration)
+        analysis_migrations = [
+            ("result", "VARCHAR"),
+            ("risk_reward", "VARCHAR"),
+            ("sentiment", "VARCHAR"),
+            ("processing_time_ms", "INTEGER"),
+            ("entry", "FLOAT"),
+            ("sl", "FLOAT"),
+            ("tp1", "FLOAT"),
+            ("tp2", "FLOAT")
+        ]
+
+        for col_name, col_type in analysis_migrations:
             try:
-                db.execute(text("ALTER TABLE analyses ADD COLUMN result VARCHAR"))
+                # Iterate and try to add. If it fails, likely exists.
+                # In Postgres: ALTER TABLE analyses ADD COLUMN IF NOT EXISTS result VARCHAR
+                # But generic approach: just try.
+                db.execute(text(f"ALTER TABLE analyses ADD COLUMN {col_name} {col_type}"))
                 db.commit()
-                logger.info("Migration Successful.")
+                logger.info(f"Migrated: Added {col_name} to analyses")
             except Exception as e:
-                logger.error(f"Migration Failed: {e}")
                 db.rollback()
 
         # Optimize: Ensure Index on created_at
@@ -333,7 +344,53 @@ def fix_database_schema(db: Session = Depends(get_db)):
         models.Base.metadata.create_all(bind=engine)
         return {"status": "success", "message": "Database schema reset successfully. All data cleared."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Schema reset failed: {str(e)}")
+@app.get("/force-migrate")
+def force_migration(db: Session = Depends(get_db)):
+    """
+    Manually trigger database schema migration for missing columns.
+    Safe to run multiple times (will skip existing columns).
+    """
+    logs = []
+    
+    # Analyses Table
+    analysis_migrations = [
+        ("result", "VARCHAR"),
+        ("risk_reward", "VARCHAR"),
+        ("sentiment", "VARCHAR"),
+        ("processing_time_ms", "INTEGER"),
+        ("entry", "FLOAT"),
+        ("sl", "FLOAT"),
+        ("tp1", "FLOAT"),
+        ("tp2", "FLOAT")
+    ]
+
+    for col_name, col_type in analysis_migrations:
+        try:
+            db.execute(text(f"ALTER TABLE analyses ADD COLUMN {col_name} {col_type}"))
+            db.commit()
+            logs.append(f"Success: Added '{col_name}' to analyses")
+        except Exception as e:
+            db.rollback()
+            logs.append(f"Skipped: '{col_name}' (likely exists or error: {str(e)})")
+            
+    # Users Table
+    user_migrations = [
+        ("plan_tier", "VARCHAR DEFAULT 'trial'"),
+        ("credits_balance", "INTEGER DEFAULT 3"),
+        ("daily_usage_count", "INTEGER DEFAULT 0"),
+        ("last_usage_date", "TIMESTAMP")
+    ]
+    
+    for col_name, col_type in user_migrations:
+        try:
+            db.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+            db.commit()
+            logs.append(f"Success: Added '{col_name}' to users")
+        except Exception as e:
+            db.rollback()
+            logs.append(f"Skipped: '{col_name}' (likely exists or error: {str(e)})")
+
+    return {"status": "completed", "logs": logs}
 
 @app.post("/upload")
 def upload_chart(file: UploadFile = File(...)):
