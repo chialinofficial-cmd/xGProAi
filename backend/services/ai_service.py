@@ -20,16 +20,13 @@ class AIService:
             self.client = anthropic.Anthropic(api_key=self.api_key)
             # List of models to try in order of preference
             self.models_to_try = [
-                "claude-3-5-sonnet-latest",    # Generic Alias (often works when specific IDs fail)
-                "claude-3-5-sonnet-20241022",  # Latest Sonnet
-                "claude-3-5-sonnet-20240620",  # Previous Sonnet
-                "claude-3-opus-latest",        # Generic Opus
-                "claude-3-opus-20240229",      # Opus
+                "claude-3-5-sonnet-20241022",  # Latest Sonnet (Best)
+                "claude-3-5-haiku-20241022",   # Latest Haiku (Fast & Smart)
+                "claude-3-opus-20240229",      # Opus (Legacy Top)
                 "claude-3-sonnet-20240229",    # Legacy Sonnet
-                "claude-3-haiku-20240307"      # Haiku (Fastest, often works)
+                "claude-3-haiku-20240307"      # Legacy Haiku (Fastest fallback)
             ]
         else:
-            self.client = None
             self.client = None
             self.models_to_try = []
 
@@ -267,8 +264,8 @@ class AIService:
                          try:
                               data = json.loads(json_str)
                          except:
-                              logger.warning(f"Analysis CoT captured but JSON failed: {text_response[:200]}...")
-                              raise Exception("Failed to parse AI response")
+                              logger.warning(f"Analysis CoT captured but JSON failed. RAW RESPONSE: {text_response}")
+                              raise Exception("Failed to parse AI response: JSON structure invalid.")
 
                 # 3. Post-Processing: Hallucination Check & SMC Validation
                 try:
