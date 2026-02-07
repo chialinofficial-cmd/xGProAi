@@ -637,11 +637,11 @@ def get_stats(
             "ai_responses": count,
             "credits_remaining": credits,
             "plan_tier": tier,
-            "trial_ends_at": user.trial_ends_at if user else None,
             "subscription_ends_at": user.subscription_ends_at if user else None
         }
     except Exception as e:
         logger.error(f"Stats Error: {e}")
+        # Return friendly error structure
         return {
             "total_analyses": 0, "charts_analyzed": 0, "ai_responses": 0, 
             "credits_remaining": 0, "plan_tier": "error"
@@ -660,18 +660,22 @@ def verify_admin(x_admin_secret: str = Header(None)):
 
 @app.get("/admin/stats")
 def get_admin_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    total_users = db.query(models.User).count()
-    pro_users = db.query(models.User).filter(models.User.plan_tier == "pro").count()
-    total_analyses = db.query(models.Analysis).count()
-    
-    revenue_est = pro_users * 29.99 # Updated to avg pro price
-    
-    return {
-        "total_users": total_users,
-        "pro_users": pro_users,
-        "total_analyses": total_analyses,
-        "revenue_estimated": int(revenue_est)
-    }
+    try:
+        total_users = db.query(models.User).count()
+        pro_users = db.query(models.User).filter(models.User.plan_tier == "pro").count()
+        total_analyses = db.query(models.Analysis).count()
+        
+        revenue_est = pro_users * 29.99 # Updated to avg pro price
+        
+        return {
+            "total_users": total_users,
+            "pro_users": pro_users,
+            "total_analyses": total_analyses,
+            "revenue_estimated": int(revenue_est)
+        }
+    except Exception as e:
+        logger.error(f"Admin Stats Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 @app.get("/admin/users")
 def get_all_users(
@@ -681,12 +685,16 @@ def get_all_users(
     db: Session = Depends(get_db), 
     _: bool = Depends(verify_admin)
 ):
-    query = db.query(models.User)
-    if search:
-        query = query.filter(models.User.email.ilike(f"%{search}%"))
-    
-    users = query.order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()
-    return users
+    try:
+        query = db.query(models.User)
+        if search:
+            query = query.filter(models.User.email.ilike(f"%{search}%"))
+        
+        users = query.order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()
+        return users
+    except Exception as e:
+        logger.error(f"Admin Users Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 @app.get("/admin/users/{user_id}/details")
 def get_user_details(user_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
@@ -730,106 +738,145 @@ def delete_user(user_id: int, db: Session = Depends(get_db), _: bool = Depends(v
 
 @app.get("/admin/analyses")
 def get_recent_global_analyses(limit: int = 20, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(limit).all()
-    return analyses
+    try:
+        analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(limit).all()
+        return analyses
+    except Exception as e:
+        logger.error(f"Admin Analyses Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+@app.get("/admin/content/charts")
+def get_admin_charts(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+    try:
+        charts = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(50).all()
+        return [
+            {
+                "id": c.id,
+                "asset": c.asset,
+                "bias": c.bias,
+                "created_at": c.created_at,
+                "user_id": c.user_id,
+                "image_url": c.image_path # Mapping for frontend
+            }
+            for c in charts
+        ]
+    except Exception as e:
+        logger.error(f"Admin Content Charts Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 # Analytics Helpers
 @app.get("/admin/analytics/usage")
 def get_usage_analytics(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    # Python-side aggregation for DB compatibility
-    thirty_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=30)
-    analyses = db.query(models.Analysis).filter(models.Analysis.created_at >= thirty_days_ago).all()
-    
-    daily_counts = {}
-    for a in analyses:
-        date_str = a.created_at.strftime("%Y-%m-%d")
-        daily_counts[date_str] = daily_counts.get(date_str, 0) + 1
-    
-    # Fill missing days? Optional.
-    data = [{"date": k, "count": v} for k,v in daily_counts.items()]
-    return sorted(data, key=lambda x: x["date"])
+    try:
+        # Python-side aggregation for DB compatibility
+        thirty_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+        analyses = db.query(models.Analysis).filter(models.Analysis.created_at >= thirty_days_ago).all()
+        
+        daily_counts = {}
+        for a in analyses:
+            date_str = a.created_at.strftime("%Y-%m-%d")
+            daily_counts[date_str] = daily_counts.get(date_str, 0) + 1
+        
+        # Fill missing days? Optional.
+        data = [{"date": k, "count": v} for k,v in daily_counts.items()]
+        return sorted(data, key=lambda x: x["date"])
+    except Exception as e:
+        logger.error(f"Admin Usage Analytics Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 @app.get("/admin/analytics/assets")
 def get_asset_analytics(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(500).all()
-    asset_counts = {}
-    for a in analyses:
-        asset = a.asset or "Unknown"
-        asset_counts[asset] = asset_counts.get(asset, 0) + 1
-    
-    return [{"name": k, "value": v} for k,v in asset_counts.items()]
+    try:
+        analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).limit(500).all()
+        asset_counts = {}
+        for a in analyses:
+            asset = a.asset or "Unknown"
+            asset_counts[asset] = asset_counts.get(asset, 0) + 1
+        
+        return [{"name": k, "value": v} for k,v in asset_counts.items()]
+    except Exception as e:
+        logger.error(f"Admin Asset Analytics Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 @app.get("/admin/ai/stats")
 def get_ai_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    # 1. Average Confidence
-    from sqlalchemy import func
-    avg_conf = db.query(func.avg(models.Analysis.confidence)).scalar() or 0
-    
-    # 2. Average Latency & History
-    latencies = db.query(models.Analysis.processing_time_ms, models.Analysis.created_at)\
-        .filter(models.Analysis.processing_time_ms != None)\
-        .order_by(models.Analysis.created_at.desc()).limit(50).all()
+    try:
+        # 1. Average Confidence
+        from sqlalchemy import func
+        avg_conf = db.query(func.avg(models.Analysis.confidence)).scalar() or 0
         
-    avg_latency = 0
-    if latencies:
-        avg_latency = sum([l[0] for l in latencies]) / len(latencies)
-        
-    latency_history = [{"date": l[1].strftime("%H:%M:%S"), "ms": l[0]} for l in reversed(latencies)]
+        # 2. Average Latency & History
+        latencies = db.query(models.Analysis.processing_time_ms, models.Analysis.created_at)\
+            .filter(models.Analysis.processing_time_ms != None)\
+            .order_by(models.Analysis.created_at.desc()).limit(50).all()
+            
+        avg_latency = 0
+        if latencies:
+            avg_latency = sum([l[0] for l in latencies]) / len(latencies)
+            
+        latency_history = [{"date": l[1].strftime("%H:%M:%S"), "ms": l[0]} for l in reversed(latencies)]
 
-    # 3. "Win Rate" (Simulated via Sentiment for now)
-    bullish = db.query(models.Analysis).filter(models.Analysis.bias == "Bullish").count()
-    bearish = db.query(models.Analysis).filter(models.Analysis.bias == "Bearish").count()
-    
-    # Placeholder for actual win rate
-    market_accuracy = 56 
-    
-    return {
-        "avg_confidence": int(avg_conf),
-        "avg_latency_ms": int(avg_latency),
-        "win_rate": market_accuracy,
-        "latency_history": latency_history,
-        "bias_distribution": [
-            {"name": "Bullish", "value": bullish},
-            {"name": "Bearish", "value": bearish}
-        ]
-    }
+        # 3. "Win Rate" (Simulated via Sentiment for now)
+        bullish = db.query(models.Analysis).filter(models.Analysis.bias == "Bullish").count()
+        bearish = db.query(models.Analysis).filter(models.Analysis.bias == "Bearish").count()
+        
+        # Placeholder for actual win rate
+        market_accuracy = 56 
+        
+        return {
+            "avg_confidence": int(avg_conf),
+            "avg_latency_ms": int(avg_latency),
+            "win_rate": market_accuracy,
+            "latency_history": latency_history,
+            "bias_distribution": [
+                {"name": "Bullish", "value": bullish},
+                {"name": "Bearish", "value": bearish}
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Admin AI Stats Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 @app.get("/admin/finance/stats")
 def get_financial_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
-    # 1. User Tiers count
-    starter = db.query(models.User).filter(models.User.plan_tier == "starter").count()
-    active = db.query(models.User).filter(models.User.plan_tier == "active").count()
-    advanced = db.query(models.User).filter(models.User.plan_tier == "advanced").count()
-    pro_legacy = db.query(models.User).filter(models.User.plan_tier == "pro").count()
-    
-    # 2. MRR Calculation (Approximate based on current pricing)
-    # Starter (Week): 45 GHS -> ~180/mo
-    # Active (Month): 150 GHS
-    # Advanced (Month): 300 GHS
-    # Pro (Legacy): 300 GHS (Assumed same as Advanced)
-    
-    mrr_ghs = (starter * 180) + (active * 150) + (advanced * 300) + (pro_legacy * 300)
-    
-    # 3. Credit Consumption (Total uploads by paid users)
-    # We can approximate this by summing daily_usage_count of paid users today, 
-    # but for "Consumption Stats" we might want historical analysis count.
-    # For now, let's just return the Tier Distribution which is the main revenue driver.
-    
-    return {
-        "mrr_ghs": mrr_ghs,
-        "revenue_breakdown": [
-            {"name": "Starter (Weekly)", "value": starter * 45, "users": starter},
-            {"name": "Active (Monthly)", "value": active * 150, "users": active},
-            {"name": "Advanced (Monthly)", "value": advanced * 300, "users": advanced},
-            {"name": "Legacy Pro", "value": pro_legacy * 300, "users": pro_legacy}
-        ],
-        "tier_distribution": [
-            {"name": "Starter", "value": starter},
-            {"name": "Active", "value": active},
-            {"name": "Advanced", "value": advanced},
-            {"name": "Legacy Pro", "value": pro_legacy}
-        ]
-    }
+    try:
+        # 1. User Tiers count
+        starter = db.query(models.User).filter(models.User.plan_tier == "starter").count()
+        active = db.query(models.User).filter(models.User.plan_tier == "active").count()
+        advanced = db.query(models.User).filter(models.User.plan_tier == "advanced").count()
+        pro_legacy = db.query(models.User).filter(models.User.plan_tier == "pro").count()
+        
+        # 2. MRR Calculation (Approximate based on current pricing)
+        # Starter (Week): 45 GHS -> ~180/mo
+        # Active (Month): 150 GHS
+        # Advanced (Month): 300 GHS
+        # Pro (Legacy): 300 GHS (Assumed same as Advanced)
+        
+        mrr_ghs = (starter * 180) + (active * 150) + (advanced * 300) + (pro_legacy * 300)
+        
+        # 3. Credit Consumption (Total uploads by paid users)
+        # We can approximate this by summing daily_usage_count of paid users today, 
+        # but for "Consumption Stats" we might want historical analysis count.
+        # For now, let's just return the Tier Distribution which is the main revenue driver.
+        
+        return {
+            "mrr_ghs": mrr_ghs,
+            "revenue_breakdown": [
+                {"name": "Starter (Weekly)", "value": starter * 45, "users": starter},
+                {"name": "Active (Monthly)", "value": active * 150, "users": active},
+                {"name": "Advanced (Monthly)", "value": advanced * 300, "users": advanced},
+                {"name": "Legacy Pro", "value": pro_legacy * 300, "users": pro_legacy}
+            ],
+            "tier_distribution": [
+                {"name": "Starter", "value": starter},
+                {"name": "Active", "value": active},
+                {"name": "Advanced", "value": advanced},
+                {"name": "Legacy Pro", "value": pro_legacy}
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Admin Finance Stats Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 class TierUpdate(BaseModel):
     tier: str
