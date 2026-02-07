@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status, Header, Form, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
@@ -91,8 +91,13 @@ def startup_event():
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://xgproai.vercel.app",
+        "https://xgpro-ai.vercel.app",
+        "https://xgproai-git-main-chialins-projects-4dd07a5e.vercel.app"
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -327,230 +332,238 @@ async def analyze_chart(
     x_user_id: str = Header(None),
     x_user_email: str = Header(None) # Capture email
 ):
-    if not x_user_id:
-        raise HTTPException(status_code=400, detail="User ID required")
-
-    # Check User Tier & Daily Limit
-    user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
-    
-    # If user doesn't exist in DB yet, create them (lazy sync)
-    if not user:
-        # 3-Day Free Trial
-        trial_expiry = datetime.datetime.utcnow() + datetime.timedelta(days=3)
-        user = models.User(
-            firebase_uid=x_user_id,
-            email=x_user_email, # Save Email
-            full_name=x_user_email.split('@')[0] if x_user_email else "Trader",
-            plan_tier="trial",
-            credits_balance=10,
-            trial_ends_at=trial_expiry
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    # Backfill email if missing for existing user
-    if x_user_email and not user.email:
-        user.email = x_user_email
-        user.full_name = x_user_email.split('@')[0]
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    # 1. ACCESS CONTROL LOGIC
-    allow_analysis = False
-    daily_limit = 0
-    
-    # Lazy Daily Reset
-    today = datetime.datetime.utcnow().date()
-    last_usage = user.last_usage_date.date() if user.last_usage_date else None
-    
-    if last_usage != today:
-        user.daily_usage_count = 0
-        user.last_usage_date = datetime.datetime.utcnow()
-        db.commit()
-
-    # Determine Limits based on Tier
-    if user.plan_tier in ["starter"]:
-        daily_limit = 10
-    elif user.plan_tier in ["active", "pro", "monthly"]: # 'pro'/monthly fallback for legacy
-        daily_limit = 20
-    elif user.plan_tier in ["advanced", "yearly"]:
-        daily_limit = 100
-    elif user.plan_tier == "trial":
-        daily_limit = 3 # Hard outcome limit for trial (Total, not daily actually)
-    
-    # Check Subscription Expiry
-    is_subscription_active = False
-    if user.plan_tier != "trial" and user.plan_tier != "free":
-        if user.subscription_ends_at and user.subscription_ends_at > datetime.datetime.utcnow():
-            is_subscription_active = True
-        else:
-            # Expired
-            user.plan_tier = "free"
-            db.commit()
-            raise HTTPException(status_code=403, detail="Subscription expired. Please renew.")
-    
-    # Logic Execution
-    if is_subscription_active:
-        # Check Daily Limit
-        if user.daily_usage_count >= daily_limit:
-             raise HTTPException(status_code=403, detail=f"Daily limit reached ({daily_limit} uploads/day). Please upgrade for more.")
-        
-        user.daily_usage_count += 1
-        user.last_usage_date = datetime.datetime.utcnow()
-        allow_analysis = True
-        db.commit()
-        
-    elif user.plan_tier == "trial":
-        # Trial is TOTAL limit, not daily
-        if user.credits_balance <= 0 or user.credits_balance > 3: # Enforce 3 max if manually changed
-             # Double check if 10 was old default
-             if user.credits_balance > 3 and user.credits_balance == 10:
-                 user.credits_balance = 3
-                 db.commit()
-        
-        if user.credits_balance <= 0:
-             raise HTTPException(status_code=403, detail="Free trial limit reached (3 uploads). Please upgrade.")
-             
-        now = datetime.datetime.utcnow()
-        if user.trial_ends_at and now > user.trial_ends_at:
-             user.plan_tier = "free"
-             db.commit()
-             raise HTTPException(status_code=403, detail="Free trial time expired. Please upgrade.")
-
-        user.credits_balance -= 1
-        allow_analysis = True
-        db.commit()
-        
-    else:
-        # Free Tier (Expired)
-        raise HTTPException(status_code=403, detail="Trial expired. Please upgrade to Pro.")
-
-    if not allow_analysis:
-         raise HTTPException(status_code=403, detail="Access denied.")
-
-    # 1. Save File
-    # Use /tmp for Vercel Serverless compatibility
-    filename = file.filename
-    upload_dir = "/tmp" if os.path.exists("/tmp") else "uploads"
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    physical_path = os.path.join(upload_dir, filename)
-    
-    # DB Path: Always use "uploads/" prefix so frontend URLs work consistently
-    # e.g. https://api.../uploads/image.png
-    db_image_path = f"uploads/{filename}"
-    
-    with open(physical_path, "wb+") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    # Pass physical path to AI Service
-    file_location = physical_path
-
-    # 2. AI Analysis & Tri-Model Orchestration
     try:
-        from services.ai_service import AIService
-        from services.quant_service import QuantService
-        from services.sentiment_service import SentimentService
-        
-        ai_service = AIService()
-        quant_service = QuantService()
-        sentiment_service = SentimentService()
-        
-        if not ai_service.api_key:
-             logger.error("Error: ANTHROPIC_API_KEY not found in environment.")
-             raise HTTPException(status_code=500, detail="Configuration Error: ANTHROPIC_API_KEY is missing.")
+        if not x_user_id:
+            raise HTTPException(status_code=400, detail="User ID required")
 
-        logger.info("Initializing Tri-Model Analysis...")
+        # Check User Tier & Daily Limit
+        user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
         
-        # --- MODEL 1: SENTIMENT ENGINE ---
-        logger.info("1. Sentiment Engine: Checking News...")
-        news_risk = sentiment_service.check_high_impact_news()
+        # If user doesn't exist in DB yet, create them (lazy sync)
+        if not user:
+            # 3-Day Free Trial
+            trial_expiry = datetime.datetime.utcnow() + datetime.timedelta(days=3)
+            user = models.User(
+                firebase_uid=x_user_id,
+                email=x_user_email, # Save Email
+                full_name=x_user_email.split('@')[0] if x_user_email else "Trader",
+                plan_tier="trial",
+                credits_balance=10,
+                trial_ends_at=trial_expiry
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        # Backfill email if missing for existing user
+        if x_user_email and not user.email:
+            user.email = x_user_email
+            user.full_name = x_user_email.split('@')[0]
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        # 1. ACCESS CONTROL LOGIC
+        allow_analysis = False
+        daily_limit = 0
         
-        # SAFETY SWITCH: Reject trade if High Impact News is imminent
-        if news_risk.get("risk") == "HIGH":
-            event_name = news_risk.get("event")
-            logger.warning(f"SAFETY SWITCH TRIGGERED: {event_name}")
-            raise HTTPException(status_code=400, detail=f"TRADING PAUSED: High Impact News Detected ({event_name}). System prevents entry during volatility spikes.")
+        # Lazy Daily Reset
+        today = datetime.datetime.utcnow().date()
+        last_usage = user.last_usage_date.date() if user.last_usage_date else None
+        
+        if last_usage != today:
+            user.daily_usage_count = 0
+            user.last_usage_date = datetime.datetime.utcnow()
+            db.commit()
+
+        # Determine Limits based on Tier
+        if user.plan_tier in ["starter"]:
+            daily_limit = 10
+        elif user.plan_tier in ["active", "pro", "monthly"]: # 'pro'/monthly fallback for legacy
+            daily_limit = 20
+        elif user.plan_tier in ["advanced", "yearly"]:
+            daily_limit = 100
+        elif user.plan_tier == "trial":
+            daily_limit = 3 # Hard outcome limit for trial (Total, not daily actually)
+        
+        # Check Subscription Expiry
+        is_subscription_active = False
+        if user.plan_tier != "trial" and user.plan_tier != "free":
+            if user.subscription_ends_at and user.subscription_ends_at > datetime.datetime.utcnow():
+                is_subscription_active = True
+            else:
+                # Expired
+                user.plan_tier = "free"
+                db.commit()
+                raise HTTPException(status_code=403, detail="Subscription expired. Please renew.")
+        
+        # Logic Execution
+        if is_subscription_active:
+            # Check Daily Limit
+            if user.daily_usage_count >= daily_limit:
+                 raise HTTPException(status_code=403, detail=f"Daily limit reached ({daily_limit} uploads/day). Please upgrade for more.")
             
-        market_sentiment = sentiment_service.get_market_sentiment()
-        logger.info(f"   Sentiment: {market_sentiment.get('label')} ({market_sentiment.get('score')})")
+            user.daily_usage_count += 1
+            user.last_usage_date = datetime.datetime.utcnow()
+            allow_analysis = True
+            db.commit()
+            
+        elif user.plan_tier == "trial":
+            # Trial is TOTAL limit, not daily
+            if user.credits_balance <= 0 or user.credits_balance > 3: # Enforce 3 max if manually changed
+                 # Double check if 10 was old default
+                 if user.credits_balance > 3 and user.credits_balance == 10:
+                     user.credits_balance = 3
+                     db.commit()
+            
+            if user.credits_balance <= 0:
+                 raise HTTPException(status_code=403, detail="Free trial limit reached (3 uploads). Please upgrade.")
+                 
+            now = datetime.datetime.utcnow()
+            if user.trial_ends_at and now > user.trial_ends_at:
+                 user.plan_tier = "free"
+                 db.commit()
+                 raise HTTPException(status_code=403, detail="Free trial time expired. Please upgrade.")
 
-        # --- MODEL 2: QUANT ENGINE ---
-        logger.info("2. Quant Engine: Analyzing Structure...")
-        # Fetch OHLCV (Sync for now, can be async)
-        # Note: In async route, we should await if method is async. fetch_ohlcv is async in definition but we need to run it.
-        # Since we are in an async def, we can await.
-        df = await quant_service.fetch_ohlcv("XAU/USD")
-        quant_analysis = quant_service.analyze_market_structure(df)
-        logger.info(f"   Quant: {quant_analysis.get('trend')} | Volatility Alert: {quant_analysis.get('volatility_alert')}")
+            user.credits_balance -= 1
+            allow_analysis = True
+            db.commit()
+            
+        else:
+            # Free Tier (Expired)
+            raise HTTPException(status_code=403, detail="Trial expired. Please upgrade to Pro.")
 
-        # --- MODEL 3: VISION ENGINE (SMC) ---
-        logger.info("3. Vision Engine: Analyzing Chart with Context...")
-        
-        # Measure Latency
-        start_time = datetime.datetime.utcnow()
-        
-        # Pass Context to AI
-        ai_result_json = ai_service.analyze_chart(
-            file_location, 
-            equity=equity,
-            quant_data=quant_analysis,
-            sentiment_data=market_sentiment
-        )
-        
-        end_time = datetime.datetime.utcnow()
-        duration_ms = int((end_time - start_time).total_seconds() * 1000)
-        
-        ai_data = json.loads(ai_result_json)
-        
-        # Inject Quantitative & Sentiment Data into Final Response for Frontend
-        ai_data["quant_engine"] = quant_analysis
-        ai_data["sentiment_engine"] = market_sentiment
-        
-        # Map AI result to DB model
-        levels = ai_data.get("levels", {})
-        metrics = ai_data.get("metrics", {})
-        
-        # Robust float conversion helper
-        def to_float(val):
-            try:
-                return float(str(val).replace(",", "")) if val else None
-            except:
-                return None
+        if not allow_analysis:
+             raise HTTPException(status_code=403, detail="Access denied.")
 
-        analysis_data = {
-            "asset": "XAU/USD",
-            "bias": ai_data.get("bias", "Neutral"),
-            "confidence": ai_data.get("confidence", 50),
-            "summary": ai_data.get("summary", "Analysis failed."),
-            "entry": to_float(levels.get("entry")),
-            "sl": to_float(levels.get("sl")),
-            "tp1": to_float(levels.get("tp1")),
-            "tp2": to_float(levels.get("tp2")),
-            "risk_reward": metrics.get("risk_reward", "N/A"),
-            "sentiment": metrics.get("sentiment", "Neutral"),
-            "image_path": db_image_path,
-            "user_id": x_user_id,
-            "processing_time_ms": duration_ms
-        }
+        # 1. Save File
+        # Use /tmp for Vercel Serverless compatibility
+        filename = file.filename
+        upload_dir = "/tmp" if os.path.exists("/tmp") else "uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        physical_path = os.path.join(upload_dir, filename)
+        
+        # DB Path: Always use "uploads/" prefix so frontend URLs work consistently
+        # e.g. https://api.../uploads/image.png
+        db_image_path = f"uploads/{filename}"
+        
+        with open(physical_path, "wb+") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Pass physical path to AI Service
+        file_location = physical_path
 
-    except HTTPException as he:
-        # Re-raise HTTP exceptions (like the 500 above)
-        raise he
+        # 2. AI Analysis & Tri-Model Orchestration
+        try:
+            from services.ai_service import AIService
+            from services.quant_service import QuantService
+            from services.sentiment_service import SentimentService
+            
+            ai_service = AIService()
+            quant_service = QuantService()
+            sentiment_service = SentimentService()
+            
+            if not ai_service.api_key:
+                 logger.error("Error: ANTHROPIC_API_KEY not found in environment.")
+                 raise HTTPException(status_code=500, detail="Configuration Error: ANTHROPIC_API_KEY is missing.")
+
+            logger.info("Initializing Tri-Model Analysis...")
+            
+            # --- MODEL 1: SENTIMENT ENGINE ---
+            logger.info("1. Sentiment Engine: Checking News...")
+            news_risk = sentiment_service.check_high_impact_news()
+            
+            # SAFETY SWITCH: Reject trade if High Impact News is imminent
+            if news_risk.get("risk") == "HIGH":
+                event_name = news_risk.get("event")
+                logger.warning(f"SAFETY SWITCH TRIGGERED: {event_name}")
+                raise HTTPException(status_code=400, detail=f"TRADING PAUSED: High Impact News Detected ({event_name}). System prevents entry during volatility spikes.")
+                
+            market_sentiment = sentiment_service.get_market_sentiment()
+            logger.info(f"   Sentiment: {market_sentiment.get('label')} ({market_sentiment.get('score')})")
+
+            # --- MODEL 2: QUANT ENGINE ---
+            logger.info("2. Quant Engine: Analyzing Structure...")
+            # Fetch OHLCV (Sync for now, can be async)
+            # Note: In async route, we should await if method is async. fetch_ohlcv is async in definition but we need to run it.
+            # Since we are in an async def, we can await.
+            df = await quant_service.fetch_ohlcv("XAU/USD")
+            quant_analysis = quant_service.analyze_market_structure(df)
+            logger.info(f"   Quant: {quant_analysis.get('trend')} | Volatility Alert: {quant_analysis.get('volatility_alert')}")
+
+            # --- MODEL 3: VISION ENGINE (SMC) ---
+            logger.info("3. Vision Engine: Analyzing Chart with Context...")
+            
+            # Measure Latency
+            start_time = datetime.datetime.utcnow()
+            
+            # Pass Context to AI
+            ai_result_json = ai_service.analyze_chart(
+                file_location, 
+                equity=equity,
+                quant_data=quant_analysis,
+                sentiment_data=market_sentiment
+            )
+            
+            end_time = datetime.datetime.utcnow()
+            duration_ms = int((end_time - start_time).total_seconds() * 1000)
+            
+            ai_data = json.loads(ai_result_json)
+            
+            # Inject Quantitative & Sentiment Data into Final Response for Frontend
+            ai_data["quant_engine"] = quant_analysis
+            ai_data["sentiment_engine"] = market_sentiment
+            
+            # Map AI result to DB model
+            levels = ai_data.get("levels", {})
+            metrics = ai_data.get("metrics", {})
+            
+            # Robust float conversion helper
+            def to_float(val):
+                try:
+                    return float(str(val).replace(",", "")) if val else None
+                except:
+                    return None
+
+            analysis_data = {
+                "asset": "XAU/USD",
+                "bias": ai_data.get("bias", "Neutral"),
+                "confidence": ai_data.get("confidence", 50),
+                "summary": ai_data.get("summary", "Analysis failed."),
+                "entry": to_float(levels.get("entry")),
+                "sl": to_float(levels.get("sl")),
+                "tp1": to_float(levels.get("tp1")),
+                "tp2": to_float(levels.get("tp2")),
+                "risk_reward": metrics.get("risk_reward", "N/A"),
+                "sentiment": metrics.get("sentiment", "Neutral"),
+                "image_path": db_image_path,
+                "user_id": x_user_id,
+                "processing_time_ms": duration_ms
+            }
+        
+        except HTTPException as he:
+             # Re-raise HTTP exceptions from inner logic
+             raise he
+
     except Exception as e:
-        print(f"AI Analysis Failed: {e}")
-        # Return a server error instead of mock data
-        raise HTTPException(status_code=500, detail=f"AI Analysis Failed: {str(e)}")
+        logger.error(f"Analysis Endpoint Failed: {e}")
+        # Return a JSON error so CORS headers are preserved (instead of raw 500)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Analysis Failed: {str(e)}"}
+        )
 
     # 3. Save to DB
-    db_analysis = models.Analysis(**analysis_data)
-    db.add(db_analysis)
-    db.commit()
-    db.refresh(db_analysis)
-
-    return db_analysis
+    try:
+        db_analysis = models.Analysis(**analysis_data)
+        db.add(db_analysis)
+        db.commit()
+        db.refresh(db_analysis)
+        return db_analysis
+    except Exception as e:
+         logger.error(f"Database Save Failed: {e}")
+         raise HTTPException(status_code=500, detail="Failed to save analysis results.")
 
 @app.get("/analyses", response_model=list[AnalysisResponse])
 def get_analyses(
