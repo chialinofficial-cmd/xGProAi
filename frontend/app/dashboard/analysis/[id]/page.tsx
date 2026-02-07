@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
-import { 
+import {
     SentimentWidget, QuantWidget, SMCWidget,
-    QuantContext, SentimentContext, SMCContext 
+    QuantContext, SentimentContext, SMCContext
 } from '@/components/dashboard/AnalysisWidgets';
 
 interface RiskManagement {
@@ -45,7 +45,8 @@ interface Analysis {
     risk_management?: RiskManagement;
     technique_confluence?: TechniqueConfluence;
     reasoning?: string;
-    
+    result?: string; // win, loss, breakeven
+
     // Glass Box Fields
     quant_engine?: QuantContext;
     sentiment_engine?: SentimentContext;
@@ -177,6 +178,34 @@ via xGProAi
         alert("Analysis copied to clipboard!");
     };
 
+    const handleResultToggle = async (result: 'win' | 'loss') => {
+        if (!analysis) return;
+
+        // Optimistic UI update
+        const previousResult = analysis.result;
+        setAnalysis({ ...analysis, result });
+
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const res = await fetch(`${apiUrl}/analyses/${id}/result`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ result }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to update result");
+            }
+        } catch (error) {
+            console.error("Error updating result:", error);
+            // Revert on error
+            setAnalysis({ ...analysis, result: previousResult });
+            alert("Failed to update result. Please try again.");
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in pb-12" id="analysis-content">
 
@@ -201,12 +230,18 @@ via xGProAi
                 <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
                     {/* Win/Loss Toggle */}
                     <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
-                        <button className="px-3 py-1.5 rounded-md text-xs font-bold text-gray-400 hover:text-green-400 hover:bg-green-500/10 transition-all flex items-center gap-1">
+                        <button
+                            onClick={() => handleResultToggle('win')}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${analysis.result === 'win' ? 'bg-green-500/20 text-green-400' : 'text-gray-400 hover:text-green-400 hover:bg-green-500/10'}`}
+                        >
                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                             WIN
                         </button>
                         <div className="w-px bg-white/10 my-1 mx-1"></div>
-                        <button className="px-3 py-1.5 rounded-md text-xs font-bold text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center gap-1">
+                        <button
+                            onClick={() => handleResultToggle('loss')}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${analysis.result === 'loss' ? 'bg-red-500/20 text-red-400' : 'text-gray-400 hover:text-red-400 hover:bg-red-500/10'}`}
+                        >
                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                             LOSS
                         </button>
@@ -439,35 +474,35 @@ via xGProAi
 
                                         {/* Lot Sizing Grid (Checking existence of lot_sizing for safety) */}
                                         {analysis.risk_management.lot_sizing && (
-                                        <div className="grid grid-cols-3 gap-4 mb-6">
-                                            <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
-                                                <p className="text-gray-400 text-[10px] uppercase mb-1">$1,000 Equity</p>
-                                                <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_1k} Lots</p>
+                                            <div className="grid grid-cols-3 gap-4 mb-6">
+                                                <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
+                                                    <p className="text-gray-400 text-[10px] uppercase mb-1">$1,000 Equity</p>
+                                                    <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_1k} Lots</p>
+                                                </div>
+                                                <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
+                                                    <p className="text-gray-400 text-[10px] uppercase mb-1">$10,000 Equity</p>
+                                                    <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_10k} Lots</p>
+                                                </div>
+                                                <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
+                                                    <p className="text-gray-400 text-[10px] uppercase mb-1">$100,000 Equity</p>
+                                                    <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_100k} Lots</p>
+                                                </div>
                                             </div>
-                                            <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
-                                                <p className="text-gray-400 text-[10px] uppercase mb-1">$10,000 Equity</p>
-                                                <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_10k} Lots</p>
-                                            </div>
-                                            <div className="bg-black/40 p-3 rounded-lg border border-gold/10 text-center">
-                                                <p className="text-gray-400 text-[10px] uppercase mb-1">$100,000 Equity</p>
-                                                <p className="text-white font-bold font-mono text-lg">{analysis.risk_management.lot_sizing.equity_100k} Lots</p>
-                                            </div>
-                                        </div>
                                         )}
 
                                         {/* Management Rules */}
                                         {analysis.risk_management.management_rules && (
-                                        <div className="bg-black/20 p-4 rounded-lg">
-                                            <h5 className="text-xs text-gray-500 font-bold uppercase mb-3">Trade Management Rules</h5>
-                                            <ul className="space-y-2">
-                                                {analysis.risk_management.management_rules.map((rule, i) => (
-                                                    <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                                                        <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                        {rule}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
+                                            <div className="bg-black/20 p-4 rounded-lg">
+                                                <h5 className="text-xs text-gray-500 font-bold uppercase mb-3">Trade Management Rules</h5>
+                                                <ul className="space-y-2">
+                                                    {analysis.risk_management.management_rules.map((rule, i) => (
+                                                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                                                            <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                            {rule}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
                                         )}
                                     </div>
                                 )}

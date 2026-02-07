@@ -11,6 +11,7 @@ class Analysis(Base):
     bias = Column(String) # Bullish, Bearish, Neutral
     confidence = Column(Integer)
     summary = Column(String)
+    result = Column(String, nullable=True) # win, loss, breakeven
     entry = Column(Float, nullable=True)
     sl = Column(Float, nullable=True)
     tp1 = Column(Float, nullable=True)

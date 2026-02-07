@@ -33,6 +33,28 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="xGProAi Backend", version="1.0", root_path="/api")
 
+# Startup Event for Migration
+@app.on_event("startup")
+def startup_event():
+    db = SessionLocal()
+    try:
+        # Check if 'result' column exists in 'analyses' table
+        result = db.execute(text("PRAGMA table_info(analyses)")).fetchall()
+        columns = [row[1] for row in result]
+        if "result" not in columns:
+            logger.info("Migrating Schema: Adding 'result' column to analyses table...")
+            try:
+                db.execute(text("ALTER TABLE analyses ADD COLUMN result VARCHAR"))
+                db.commit()
+                logger.info("Migration Successful.")
+            except Exception as e:
+                logger.error(f"Migration Failed: {e}")
+                db.rollback()
+    except Exception as e:
+        logger.error(f"Startup Check Failed: {e}")
+    finally:
+        db.close()
+
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +65,7 @@ app.add_middleware(
 )
 
 # ... (Previous imports)
+from sqlalchemy import text
 
 # Custom Image Serving
 @app.get("/uploads/{filename}")
@@ -185,10 +208,14 @@ class AnalysisResponse(BaseModel):
     risk_reward: str | None = None
     sentiment: str | None = None
     image_path: str
+    result: str | None = None # win, loss, breakeven
     created_at: datetime.datetime
     
     class Config:
         orm_mode = True
+
+class AnalysisUpdateResult(BaseModel):
+    result: str # win, loss, breakeven
 
 class StatsResponse(BaseModel):
     total_analyses: int
@@ -512,6 +539,19 @@ def get_analysis(analysis_id: int, db: Session = Depends(get_db)):
     analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id).first()
     if analysis is None:
         raise HTTPException(status_code=404, detail="Analysis not found")
+    if analysis is None:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    return analysis
+
+@app.patch("/analyses/{analysis_id}/result", response_model=AnalysisResponse)
+def update_analysis_result(analysis_id: int, result_data: AnalysisUpdateResult, db: Session = Depends(get_db)):
+    analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    
+    analysis.result = result_data.result
+    db.commit()
+    db.refresh(analysis)
     return analysis
 
 @app.get("/stats", response_model=StatsResponse)
