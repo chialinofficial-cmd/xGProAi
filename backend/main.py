@@ -339,6 +339,15 @@ async def analyze_chart(
         # Check User Tier & Daily Limit
         user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
         
+        # If not found by UID, try finding by Email (to prevent duplicates)
+        if not user and x_user_email:
+             user = db.query(models.User).filter(models.User.email == x_user_email).first()
+             if user:
+                 logger.info(f"User found by email {x_user_email}, updating UID to {x_user_id}")
+                 user.firebase_uid = x_user_id
+                 db.commit()
+                 db.refresh(user)
+
         # If user doesn't exist in DB yet, create them (lazy sync)
         if not user:
             # 3-Day Free Trial
