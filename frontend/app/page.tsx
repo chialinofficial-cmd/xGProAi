@@ -9,7 +9,7 @@ export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const handlePayment = async (amount: number) => {
+  const handlePayment = async (amount: number, planTier: string) => {
     if (!user) {
       router.push('/signup');
       return;
@@ -25,14 +25,15 @@ export default function Home() {
         },
         body: JSON.stringify({
           amount: amount,
-          email: user.email
+          email: user.email,
+          plan_tier: planTier
         })
       });
       const data = await res.json();
       if (data.authorization_url) {
         window.location.href = data.authorization_url;
       } else {
-        alert("Payment creation failed");
+        alert("Payment creation failed: " + (data.detail || "Unknown error"));
       }
     } catch (e) {
       console.error(e);
@@ -387,7 +388,7 @@ export default function Home() {
               </ul>
 
               <button
-                onClick={() => handlePayment(45)}
+                onClick={() => handlePayment(45, 'starter')}
                 className="w-full py-3 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 transition-all font-semibold"
               >
                 Subscribe Now →
@@ -417,7 +418,7 @@ export default function Home() {
               </ul>
 
               <button
-                onClick={() => handlePayment(150)}
+                onClick={() => handlePayment(150, 'active')}
                 className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-lg shadow-blue-900/20"
               >
                 Subscribe Now →
@@ -442,7 +443,7 @@ export default function Home() {
               </ul>
 
               <button
-                onClick={() => handlePayment(300)}
+                onClick={() => handlePayment(300, 'advanced')}
                 className="w-full py-3 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 transition-all font-semibold"
               >
                 Subscribe Now →

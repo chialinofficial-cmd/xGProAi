@@ -1083,3 +1083,122 @@ async def get_market_data(symbol: str, timeframe: str = "1h"):
     except Exception as e:
         logger.error(f"Market Data Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- Payment Integration (Paystack) ---
+from services.paystack_service import PaystackService
+
+class PaymentInit(BaseModel):
+    amount: float
+    email: str
+    plan_tier: str
+
+@app.post("/paystack/initialize")
+def initialize_payment(payment: PaymentInit, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+        
+    # Get User
+    user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Initialize Paystack
+    paystack = PaystackService()
+    try:
+        # We pass amount in GHS directly, service handles conversion to kobo if needed
+        result = paystack.initialize_transaction(
+            email=payment.email, 
+            amount_ghs=payment.amount, 
+            plan_tier=payment.plan_tier, 
+            user_id=x_user_id
+        )
+        
+        if not result or not result.get('status'):
+             raise HTTPException(status_code=400, detail="Failed to initialize payment")
+             
+        # Log Logic: Consider saving a pending payment record here if robust tracking is needed.
+        # For now, we rely on the webhook/verify to finalize.
+        
+        return result['data'] # Contains authorization_url
+    except Exception as e:
+        logger.error(f"Payment Init Error: {e}")
+        raise HTTPException(status_code=500, detail="Payment initialization failed")
+
+@app.get("/paystack/verify/{reference}")
+def verify_payment(reference: str, db: Session = Depends(get_db)):
+    paystack = PaystackService()
+    result = paystack.verify_transaction(reference)
+    
+    if not result or not result.get('status'):
+        raise HTTPException(status_code=400, detail="Verification failed")
+        
+    data = result['data']
+    status = data.get('status')
+    
+    if status == 'success':
+        # Extraction
+        metadata = data.get('metadata', {})
+        user_id = metadata.get('user_id')
+        plan_tier = metadata.get('plan_tier')
+        amount_paid = data.get('amount') / 100 # Convert back to GHS
+        
+        if user_id and plan_tier:
+            user = db.query(models.User).filter(models.User.firebase_uid == user_id).first()
+            if user:
+                # Update User Plan
+                user.plan_tier = plan_tier
+                user.daily_usage_count = 0 # Reset usage
+                
+                # Set Subscription Expiry (30 days for now, can logic this better later)
+                # If weekly plan, set 7 days.
+                duration_days = 30
+                if plan_tier == 'starter': 
+                    duration_days = 7
+                elif plan_tier == 'active':
+                    duration_days = 30
+                elif plan_tier == 'advanced':
+                    duration_days = 30
+                    
+                user.subscription_ends_at = datetime.datetime.utcnow() + datetime.timedelta(days=duration_days)
+                
+                # Update Credits (Optional logic if we move to purely credit based)
+                # Currently we rely on Tier limits.
+                
+                db.commit()
+                
+                # Save Payment Record
+                payment = models.Payment(
+                    order_id=reference,
+                    user_id=user_id,
+                    amount=amount_paid,
+                    currency="GHS",
+                    status="paid"
+                )
+                db.add(payment)
+                db.commit()
+                
+                return {"status": "success", "message": "Payment verified and plan updated"}
+    
+    return {"status": "failed", "message": "Payment verification failed or not successful"}
+
+# --- AI Chat Integration ---
+from services.chat_service import ChatService
+from fastapi.responses import StreamingResponse
+
+class ChatMessage(BaseModel):
+    message: str
+    history: list = []
+
+@app.post("/chat/message")
+async def chat_message(chat_data: ChatMessage, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+        
+    # Optional: Check credits here
+    
+    chat_service = ChatService()
+    
+    return StreamingResponse(
+        chat_service.stream_chat_response(chat_data.message, chat_data.history),
+        media_type="text/plain"
+    )
