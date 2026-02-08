@@ -999,9 +999,10 @@ def extend_user_trial(user_id: int, extension: TrialExtension, db: Session = Dep
     return {"status": "success", "new_expiry": user.trial_ends_at}
 
 @app.get("/market-data/{symbol}")
-async def get_market_data(symbol: str):
+async def get_market_data(symbol: str, timeframe: str = "1h"):
     """
-    Fetches live OHLCV data for the chart.
+    Fetches live OHLCV data for the chart with optional timeframe.
+    Supported timeframes: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w
     """
     try:
         # Decode symbol if needed (e.g. XAU-USD -> XAU/USD)
@@ -1010,8 +1011,13 @@ async def get_market_data(symbol: str):
         # Instantiate service
         quant = QuantService()
         
+        # Validate timeframe (basic check)
+        valid_timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w"]
+        if timeframe not in valid_timeframes:
+            timeframe = "1h" # Fallback
+
         # Fetch Data
-        df = await quant.fetch_ohlcv(clean_symbol)
+        df = await quant.fetch_ohlcv(clean_symbol, timeframe=timeframe)
         
         # Format for Lightweight Charts
         data = []

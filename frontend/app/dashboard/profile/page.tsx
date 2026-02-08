@@ -39,66 +39,66 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Left: Profile Form */}
-                <div className="lg:col-span-2 bg-surface-card border border-border-subtle rounded-xl p-8">
+                <div className="lg:col-span-2 glass-panel rounded-xl p-8">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-lg font-bold text-white">Profile Information</h2>
-                        <button className="flex items-center gap-2 px-4 py-2 border border-border-subtle rounded-lg text-white text-sm hover:bg-white/5 transition-colors">
+                        <button className="flex items-center gap-2 px-4 py-2 border border-white/10 rounded-lg text-white text-sm hover:bg-white/5 transition-colors backdrop-blur-sm">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             Complete Profile
                         </button>
                     </div>
 
                     <div className="flex items-center gap-4 mb-8">
-                        <div className="w-16 h-16 rounded-full bg-blue-600 overflow-hidden relative group cursor-pointer">
-                            {/* Placeholder for user avatar - using a gradient/initials fallback or image if available */}
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-xl font-bold text-white uppercase">
+                        <div className="w-16 h-16 rounded-full bg-blue-600 overflow-hidden relative group cursor-pointer ring-4 ring-white/5">
+                            {/* Placeholder for user avatar */}
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-xl font-bold text-white uppercase shadow-inner">
                                 {user?.displayName ? user.displayName.substring(0, 2) : "U"}
                             </div>
                         </div>
                         <div>
                             <h3 className="text-white font-bold text-lg">{user?.displayName || "User"}</h3>
-                            <p className="text-gray-500 text-sm">Full Stack Trader</p>
+                            <p className="text-gray-400 text-sm">Full Stack Trader</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-medium uppercase">Name</label>
+                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Name</label>
                             <input
                                 type="text"
                                 defaultValue={user?.displayName || ""}
-                                className="w-full bg-[#1a1d24] border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm"
                                 readOnly
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-medium uppercase">Email</label>
+                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Email</label>
                             <input
                                 type="email"
                                 defaultValue={user?.email || ""}
-                                className="w-full bg-[#1a1d24] border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm"
                                 readOnly
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-medium uppercase">Mobile</label>
+                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Mobile</label>
                             <input
                                 type="tel"
                                 placeholder="Add phone number"
-                                className="w-full bg-[#1a1d24] border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600 backdrop-blur-sm"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-medium uppercase">Country</label>
+                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Country</label>
                             <input
                                 type="text"
                                 placeholder="Add Country"
-                                className="w-full bg-[#1a1d24] border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600 backdrop-blur-sm"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-medium uppercase">Gender</label>
-                            <select className="w-full bg-[#1a1d24] border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Gender</label>
+                            <select className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm">
                                 <option>Select Gender</option>
                                 <option>Male</option>
                                 <option>Female</option>
@@ -106,8 +106,8 @@ export default function ProfilePage() {
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-medium uppercase">Age Group</label>
-                            <select className="w-full bg-[#1a1d24] border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Age Group</label>
+                            <select className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm">
                                 <option>Select Age Group</option>
                                 <option>18-25</option>
                                 <option>26-39</option>
@@ -119,7 +119,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Right: Account Details */}
-                <div className="bg-surface-card border border-border-subtle rounded-xl p-8 h-fit">
+                <div className="glass-card rounded-xl p-8 h-fit">
                     <h2 className="text-lg font-bold text-white mb-6">Account Details</h2>
 
                     <div className="space-y-6">
@@ -137,7 +137,7 @@ export default function ProfilePage() {
                                 <span className="text-sm">Plan Type</span>
                             </div>
                             <div className="text-right">
-                                <span className={`text-xs px-2 py-1 rounded border font-bold uppercase ${profileData?.plan_tier === 'pro' ? 'bg-gold/10 text-gold border-gold/30' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>
+                                <span className={`text-xs px-2 py-1 rounded border font-bold uppercase ${profileData?.plan_tier === 'pro' ? 'bg-gold/10 text-gold border-gold/30' : 'bg-white/5 text-gray-400 border-white/10'}`}>
                                     {profileData?.plan_tier || "free"}
                                 </span>
                                 {profileData?.trial_ends_at && profileData.plan_tier === 'trial' && (
@@ -163,13 +163,12 @@ export default function ProfilePage() {
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                                 <span className="text-sm">Credits Left</span>
                             </div>
-                            <span className="bg-blue-600/10 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-600/20">
+                            <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-500/20">
                                 {profileData?.plan_tier === 'pro' ? '∞' : (profileData?.credits_remaining || 0)}
                             </span>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );

@@ -17,6 +17,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
     const [chartData, setChartData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [timeframe, setTimeframe] = useState("1h");
 
     // Fetch Data
     useEffect(() => {
@@ -27,7 +28,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
                 // Encode symbol: XAU/USD -> XAU-USD
                 const safeSymbol = symbol.replace("/", "-");
-                const res = await fetch(`${apiUrl}/market-data/${safeSymbol}`);
+                const res = await fetch(`${apiUrl}/market-data/${safeSymbol}?timeframe=${timeframe}`);
                 if (!res.ok) throw new Error("Failed to fetch market data");
                 const data = await res.json();
 
@@ -46,7 +47,7 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
             }
         };
         fetchData();
-    }, [symbol]);
+    }, [symbol, timeframe]);
 
     // Render Chart
     useEffect(() => {
@@ -145,18 +146,47 @@ export default function TradingViewChart({ symbol, levels }: TradingViewChartPro
     }, [chartData, levels]);
 
     return (
-        <div className="relative w-full h-[500px] glass-panel rounded-xl overflow-hidden">
-            {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 backdrop-blur-sm">
-                    <div className="animate-spin h-8 w-8 border-4 border-gold border-t-transparent rounded-full"></div>
+        <div className="relative w-full h-[530px] glass-panel rounded-xl overflow-hidden flex flex-col">
+            {/* Chart Toolbar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/20 z-20">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gold uppercase tracking-wider">{symbol}</span>
+                    <div className="h-4 w-px bg-white/10 mx-2"></div>
+                    <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/10">
+                        {['15m', '1h', '4h', '1d'].map((tf) => (
+                            <button
+                                key={tf}
+                                onClick={() => setTimeframe(tf)}
+                                className={`px-3 py-1 text-[10px] font-bold rounded transition-colors ${timeframe === tf ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                {tf.toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            )}
-            {error && (
-                <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <p className="text-red-400 text-sm">{error}</p>
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span className="text-[10px] text-gray-400 font-mono">LIVE FEED</span>
                 </div>
-            )}
-            <div ref={chartContainerRef} className="w-full h-full" />
+
+            </div>
+
+            <div className="relative flex-1 w-full">
+                {loading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 backdrop-blur-sm">
+                        <div className="animate-spin h-8 w-8 border-4 border-gold border-t-transparent rounded-full"></div>
+                    </div>
+                )}
+                {error && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <div className="text-center p-4 bg-red-500/10 border border-red-500/20 rounded-lg backdrop-blur-md">
+                            <p className="text-red-400 text-sm font-bold mb-1">Data Unavailable</p>
+                            <p className="text-red-300/70 text-xs">{error}</p>
+                        </div>
+                    </div>
+                )}
+                <div ref={chartContainerRef} className="w-full h-full" />
+            </div>
         </div>
     );
 }

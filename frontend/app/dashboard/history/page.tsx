@@ -67,8 +67,8 @@ export default function HistoryPage() {
             </div>
 
             {analyses.length === 0 ? (
-                <div className="text-center py-20 bg-surface-card border border-border-subtle rounded-xl">
-                    <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
+                <div className="text-center py-20 glass-panel border border-white/5 rounded-xl">
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
                         <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                     </div>
                     <h3 className="text-white font-bold text-lg mb-2">No Analysis Yet</h3>
@@ -81,7 +81,7 @@ export default function HistoryPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {analyses.map((item) => (
                         <Link href={`/dashboard/analysis/${item.id}`} key={item.id} className="group">
-                            <div className="bg-surface-card border border-border-subtle rounded-xl overflow-hidden hover:border-gold/50 transition-colors h-full flex flex-col">
+                            <div className="glass-card rounded-xl overflow-hidden hover:border-white/20 transition-all h-full flex flex-col hover:-translate-y-1 hover:shadow-xl">
                                 {/* Image Preview */}
                                 <div className="h-40 bg-black/50 relative overflow-hidden">
                                     {item.image_path ? (
@@ -94,7 +94,7 @@ export default function HistoryPage() {
                                         <div className="w-full h-full flex items-center justify-center text-gray-600">No Preview</div>
                                     )}
                                     <div className="absolute top-3 right-3">
-                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${item.bias === 'Bullish' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm ${item.bias === 'Bullish' ? 'bg-green-500/30 text-green-400 border border-green-500/30' : 'bg-red-500/30 text-red-400 border border-red-500/30'}`}>
                                             {item.bias}
                                         </span>
                                     </div>
@@ -110,9 +110,9 @@ export default function HistoryPage() {
                                         {item.summary}
                                     </p>
 
-                                    <div className="flex items-center justify-between pt-4 border-t border-gray-800">
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-full bg-gray-800 h-1.5 w-16 rounded-full overflow-hidden">
+                                            <div className="bg-gray-800 h-1.5 w-16 rounded-full overflow-hidden">
                                                 <div className={`h-full ${item.confidence > 70 ? 'bg-green-500' : 'bg-yellow-500'}`} style={{ width: `${item.confidence}%` }}></div>
                                             </div>
                                             <span className="text-xs text-gray-400 font-mono">{item.confidence}% Conf.</span>
@@ -124,7 +124,6 @@ export default function HistoryPage() {
                         </Link>
                     ))}
                 </div>
-            )}
-        </div>
+            )}        </div>
     );
 }
