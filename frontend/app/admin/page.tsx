@@ -199,38 +199,42 @@ export default function AdminPage() {
     const renderOverview = () => (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                    <p className="text-gray-400 text-xs uppercase">Users</p>
-                    <p className="text-3xl font-bold text-white mt-2">{stats?.total_users || 0}</p>
+                <div className="glass-card p-6 rounded-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-white/10 transition-colors"></div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wider relative z-10">Users</p>
+                    <p className="text-3xl font-bold text-white mt-2 relative z-10">{stats?.total_users || 0}</p>
                 </div>
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                    <p className="text-gray-400 text-xs uppercase">Pro VIPs</p>
-                    <p className="text-3xl font-bold text-gold mt-2">{stats?.pro_users || 0}</p>
+                <div className="glass-card p-6 rounded-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gold/10 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-gold/20 transition-colors"></div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wider relative z-10">Pro VIPs</p>
+                    <p className="text-3xl font-bold text-gold mt-2 relative z-10">{stats?.pro_users || 0}</p>
                 </div>
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                    <p className="text-gray-400 text-xs uppercase">Analysis Vol</p>
-                    <p className="text-3xl font-bold text-blue-400 mt-2">{stats?.total_analyses || 0}</p>
+                <div className="glass-card p-6 rounded-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-blue-500/20 transition-colors"></div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wider relative z-10">Analysis Vol</p>
+                    <p className="text-3xl font-bold text-blue-400 mt-2 relative z-10">{stats?.total_analyses || 0}</p>
                 </div>
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                    <p className="text-gray-400 text-xs uppercase">Revenue (Est)</p>
-                    <p className="text-3xl font-bold text-green-400 mt-2">${stats?.revenue_estimated || 0}</p>
+                <div className="glass-card p-6 rounded-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-green-500/20 transition-colors"></div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wider relative z-10">Revenue (Est)</p>
+                    <p className="text-3xl font-bold text-green-400 mt-2 relative z-10">${stats?.revenue_estimated || 0}</p>
                 </div>
             </div>
             <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[400px]">
-                    <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Popular Assets</h3>
+                <div className="glass-panel p-6 rounded-xl h-[400px]">
+                    <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Popular Assets</h3>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie data={assetData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
                                 {assetData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={GRAF_COLORS[index % GRAF_COLORS.length]} />
+                                    <Cell key={`cell-${index}`} fill={GRAF_COLORS[index % GRAF_COLORS.length]} stroke="rgba(0,0,0,0.5)" />
                                 ))}
                             </Pie>
-                            <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} />
+                            <RechartsTooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderColor: '#333', backdropFilter: 'blur(10px)' }} itemStyle={{ color: '#fff' }} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
-                <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden h-[400px] flex flex-col">
+                <div className="glass-panel rounded-xl overflow-hidden h-[400px] flex flex-col">
                     <div className="p-4 border-b border-white/10"><h3 className="font-bold text-white">Live Activity Feed</h3></div>
                     <div className="flex-1 overflow-y-auto divide-y divide-white/5">
                         {activity.map(a => (
@@ -252,7 +256,7 @@ export default function AdminPage() {
     );
 
     const renderUsers = () => (
-        <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="glass-panel rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="p-4 border-b border-white/10 flex justify-between items-center flex-wrap gap-4">
                 <h3 className="font-bold text-white">User Management</h3>
                 <div className="flex gap-2">
@@ -337,20 +341,20 @@ export default function AdminPage() {
     const renderAI = () => (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                    <p className="text-gray-400 text-xs uppercase">AI Latency (Avg)</p>
-                    <p className="text-3xl font-bold text-blue-400 mt-2">{aiStats?.avg_latency_ms || 0}<span className="text-sm text-gray-500">ms</span></p>
+                <div className="glass-card p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase tracking-wider">AI Latency (Avg)</p>
+                    <p className="text-3xl font-bold text-blue-400 mt-2">{aiStats?.avg_latency_ms || 0}<span className="text-sm text-gray-500 ml-1">ms</span></p>
                 </div>
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                    <p className="text-gray-400 text-xs uppercase">Avg Confidence</p>
+                <div className="glass-card p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase tracking-wider">Avg Confidence</p>
                     <p className="text-3xl font-bold text-gold mt-2">{aiStats?.avg_confidence || 0}%</p>
                 </div>
-                <div className="bg-surface-card border border-white/10 p-6 rounded-xl">
-                    <p className="text-gray-400 text-xs uppercase">Win Rate (Est)</p>
+                <div className="glass-card p-6 rounded-xl">
+                    <p className="text-gray-400 text-xs uppercase tracking-wider">Win Rate (Est)</p>
                     <p className="text-3xl font-bold text-green-400 mt-2">{aiStats?.win_rate || 0}%</p>
                 </div>
             </div>
-            <div className="bg-surface-card border border-white/10 p-6 rounded-xl h-[400px]">
+            <div className="glass-panel p-6 rounded-xl h-[400px]">
                 <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">AI Latency Trend (Last 50 Requests)</h3>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={aiStats?.latency_history || []}>
@@ -367,12 +371,12 @@ export default function AdminPage() {
     const renderFinance = () => (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid md:grid-cols-3 gap-8">
-                <div className="bg-gradient-to-br from-gold/20 to-black border border-gold/30 p-6 rounded-xl flex flex-col justify-center">
+                <div className="bg-gradient-to-br from-gold/20 to-black border border-gold/30 p-6 rounded-xl flex flex-col justify-center shadow-[0_0_30px_rgba(212,175,55,0.1)] backdrop-blur-sm">
                     <p className="text-gold text-sm uppercase tracking-wider mb-2">Monthly Recurring Revenue</p>
                     <p className="text-5xl font-bold text-white"><span className="text-2xl text-gray-400 mr-1">GHS</span>{finStats?.mrr_ghs?.toLocaleString() || 0}</p>
                     <p className="text-xs text-gray-500 mt-2">Estimated based on active plans</p>
                 </div>
-                <div className="md:col-span-2 bg-surface-card border border-white/10 p-6 rounded-xl h-[300px]">
+                <div className="md:col-span-2 glass-panel p-6 rounded-xl h-[300px]">
                     <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase">Revenue by Tier</h3>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={finStats?.revenue_breakdown || []} layout="vertical">
@@ -388,7 +392,7 @@ export default function AdminPage() {
     );
 
     const renderContent = () => (
-        <div className="bg-surface-card border border-white/10 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="glass-panel rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="p-4 border-b border-white/10 flex justify-between items-center"><h3 className="font-bold text-white">Recent Uploads</h3><span className="text-xs text-gray-500">Live Repository</span></div>
             <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-[70vh] overflow-y-auto">
                 {charts.map(chart => (
@@ -431,8 +435,8 @@ export default function AdminPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-white">
-            <nav className="border-b border-white/10 bg-surface-card p-4 sticky top-0 z-20">
+        <div className="min-h-screen bg-black text-white selection:bg-gold/30">
+            <nav className="border-b border-white/5 bg-black/50 backdrop-blur-md p-4 sticky top-0 z-20">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-6">
                         <h1 className="text-xl font-bold flex items-center gap-2">
