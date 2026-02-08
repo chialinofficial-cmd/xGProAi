@@ -138,12 +138,16 @@ from sqlalchemy import text
 # Custom Image Serving
 @app.get("/uploads/{filename}")
 async def get_uploaded_file(filename: str):
-    file_path = os.path.join("uploads", filename)
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    # Fallback to tmp for serverless if needed, or just return 404
-    if os.path.exists(os.path.join("/tmp", filename)):
-        return FileResponse(os.path.join("/tmp", filename))
+    # Check /tmp first for production (Render/Vercel)
+    tmp_path = os.path.join("/tmp", filename)
+    if os.path.exists(tmp_path):
+        return FileResponse(tmp_path)
+    
+    # Fallback to local uploads/ directory
+    local_path = os.path.join("uploads", filename)
+    if os.path.exists(local_path):
+        return FileResponse(local_path)
+        
     raise HTTPException(status_code=404, detail="File not found")
 
 # Dependency
