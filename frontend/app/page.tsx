@@ -1,78 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './context/AuthContext';
 import ParticlesBackground from '../components/ParticlesBackground';
 
 export default function Home() {
-  const [isDragging, setIsDragging] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { user } = useAuth();
   const router = useRouter();
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const uploadFile = async (file: File) => {
-    if (!user) {
-      router.push('/signup');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-      const res = await fetch(`${apiUrl}/analyze`, {
-        method: 'POST',
-        headers: {
-          'X-User-ID': user.uid,
-          'X-User-Email': user.email || ""
-        },
-        body: formData
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Analysis failed");
-      }
-
-      // Success
-      router.push('/dashboard');
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert(error instanceof Error ? error.message : "Upload failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      uploadFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      uploadFile(e.target.files[0]);
-    }
-  };
 
   const handlePayment = async (amount: number) => {
     if (!user) {
@@ -138,36 +73,9 @@ export default function Home() {
 
       {/* Hero Section */}
       <main
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
         className="flex-grow flex flex-col items-center justify-center text-center px-4 pt-20 pb-16 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-surface-end to-background relative overflow-hidden"
       >
         <ParticlesBackground />
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept="image/*"
-          onChange={handleFileSelect}
-        />
-
-        {/* Loading Overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-            <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-xl font-bold text-white">Analyzing Chart...</p>
-            <p className="text-sm text-gray-400">Our AI is checking for liquidity & bias</p>
-          </div>
-        )}
-
-        {/* Drag Overlay */}
-        {isDragging && !isLoading && (
-          <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-sm z-40 flex items-center justify-center border-2 border-dashed border-blue-500 m-4 rounded-3xl">
-            <p className="text-2xl font-bold text-white">Drop your chart here to analyze</p>
-          </div>
-        )}
 
         {/* Powered By Badge */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 text-xs text-blue-400 font-medium opacity-80">
@@ -209,23 +117,18 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Dashboard Preview Image (Clickable Upload) */}
+          {/* Dashboard Preview Image (Static) */}
           <div
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-16 relative mx-auto max-w-4xl cursor-pointer group"
+            className="mt-16 relative mx-auto max-w-4xl group"
           >
             <div className="absolute inset-0 bg-blue-500/20 blur-3xl -z-10 rounded-full opacity-20" />
-            <div className="rounded-xl border border-border-subtle bg-surface-card/50 backdrop-blur-sm p-4 shadow-2xl group-hover:border-blue-500/50 transition-colors">
+            <div className="rounded-xl border border-border-subtle bg-surface-card/50 backdrop-blur-sm p-4 shadow-2xl transition-colors">
               <div className="flex items-center gap-2 mb-4 px-2 justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="ml-2 text-xs text-gray-500">See exactly what AI shows before you sign up</span>
-                </div>
-                <div className="text-xs text-blue-400 font-bold flex items-center gap-1">
-                  <span>Click to Upload Chart</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                  <span className="ml-2 text-xs text-gray-500">Institutional Dashboard Preview</span>
                 </div>
               </div>
               {/* Generated Dashboard Preview */}
@@ -234,13 +137,6 @@ export default function Home() {
                 alt="xGProAi Dashboard Preview"
                 className="w-full rounded-lg border border-border-subtle"
               />
-
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                <p className="text-white font-bold bg-black/50 px-4 py-2 rounded-lg backdrop-blur-md">
-                  Click to Analyze Your Chart
-                </p>
-              </div>
             </div>
           </div>
 
