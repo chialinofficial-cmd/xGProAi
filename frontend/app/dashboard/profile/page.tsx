@@ -7,6 +7,14 @@ import { useAuth } from '../../context/AuthContext';
 export default function ProfilePage() {
     const { user } = useAuth();
     const [profileData, setProfileData] = useState<any>(null);
+    const [formData, setFormData] = useState({
+        mobile: '',
+        country: '',
+        gender: '',
+        age_group: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
 
     useEffect(() => {
         if (!user) return;
@@ -19,6 +27,12 @@ export default function ProfilePage() {
                 if (res.ok) {
                     const data = await res.json();
                     setProfileData(data);
+                    setFormData({
+                        mobile: data.mobile || '',
+                        country: data.country || '',
+                        gender: data.gender || '',
+                        age_group: data.age_group || ''
+                    });
                 }
             } catch (err) {
                 console.error(err);
@@ -27,6 +41,49 @@ export default function ProfilePage() {
         fetchProfile();
     }, [user]);
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        if (!user) return;
+        setIsSaving(true);
+        setSaveMessage({ type: '', text: '' });
+
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const res = await fetch(`${apiUrl}/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-ID': user.uid
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (res.ok) {
+                setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
+                // Refresh profile data to ensure sync
+                const statsRes = await fetch(`${apiUrl}/stats`, {
+                    headers: { 'X-User-ID': user.uid }
+                });
+                if (statsRes.ok) {
+                    const data = await statsRes.json();
+                    setProfileData(data);
+                }
+            } else {
+                setSaveMessage({ type: 'error', text: 'Failed to update profile.' });
+            }
+        } catch (error) {
+            console.error(error);
+            setSaveMessage({ type: 'error', text: 'An error occurred.' });
+        } finally {
+            setIsSaving(false);
+            setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
+        }
+    };
+
     return (
         <div className="space-y-6">
 
@@ -34,6 +91,11 @@ export default function ProfilePage() {
             <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold text-white mb-2">My Profile</h1>
                 <p className="text-gray-400">Manage your account information and preferences</p>
+                {saveMessage.text && (
+                    <div className={`mt-4 px-4 py-2 rounded-lg text-sm font-medium inline-block ${saveMessage.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {saveMessage.text}
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -42,9 +104,17 @@ export default function ProfilePage() {
                 <div className="lg:col-span-2 glass-panel rounded-xl p-8">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-lg font-bold text-white">Profile Information</h2>
-                        <button className="flex items-center gap-2 px-4 py-2 border border-white/10 rounded-lg text-white text-sm hover:bg-white/5 transition-colors backdrop-blur-sm">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            Complete Profile
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className={`flex items-center gap-2 px-4 py-2 border border-white/10 rounded-lg text-white text-sm hover:bg-white/5 transition-colors backdrop-blur-sm ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {isSaving ? (
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            )}
+                            {isSaving ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
 
@@ -67,7 +137,7 @@ export default function ProfilePage() {
                             <input
                                 type="text"
                                 defaultValue={user?.displayName || ""}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm opacity-50 cursor-not-allowed"
                                 readOnly
                             />
                         </div>
@@ -76,7 +146,7 @@ export default function ProfilePage() {
                             <input
                                 type="email"
                                 defaultValue={user?.email || ""}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm opacity-50 cursor-not-allowed"
                                 readOnly
                             />
                         </div>
@@ -84,6 +154,9 @@ export default function ProfilePage() {
                             <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Mobile</label>
                             <input
                                 type="tel"
+                                name="mobile"
+                                value={formData.mobile}
+                                onChange={handleInputChange}
                                 placeholder="Add phone number"
                                 className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600 backdrop-blur-sm"
                             />
@@ -92,27 +165,40 @@ export default function ProfilePage() {
                             <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Country</label>
                             <input
                                 type="text"
+                                name="country"
+                                value={formData.country}
+                                onChange={handleInputChange}
                                 placeholder="Add Country"
                                 className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600 backdrop-blur-sm"
                             />
                         </div>
                         <div className="space-y-2">
                             <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Gender</label>
-                            <select className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm">
-                                <option>Select Gender</option>
-                                <option>Male</option>
-                                <option>Female</option>
-                                <option>Other</option>
+                            <select
+                                name="gender"
+                                value={formData.gender}
+                                onChange={handleInputChange}
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm"
+                            >
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
                         <div className="space-y-2">
                             <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Age Group</label>
-                            <select className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm">
-                                <option>Select Age Group</option>
-                                <option>18-25</option>
-                                <option>26-39</option>
-                                <option>40-60</option>
-                                <option>60+</option>
+                            <select
+                                name="age_group"
+                                value={formData.age_group}
+                                onChange={handleInputChange}
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm"
+                            >
+                                <option value="">Select Age Group</option>
+                                <option value="18-25">18-25</option>
+                                <option value="26-39">26-39</option>
+                                <option value="40-60">40-60</option>
+                                <option value="60+">60+</option>
                             </select>
                         </div>
                     </div>

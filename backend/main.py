@@ -93,6 +93,22 @@ def startup_event():
                 db.rollback()
                 # logger.debug(f"Skipped {col_name} (likely exists)")
 
+        # Optimize: Check/Add Profile columns to 'users' table
+        profile_migrations = [
+            ("mobile", "VARCHAR"),
+            ("country", "VARCHAR"),
+            ("gender", "VARCHAR"),
+            ("age_group", "VARCHAR")
+        ]
+        
+        for col_name, col_type in profile_migrations:
+            try:
+                db.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                db.commit()
+                logger.info(f"Migrated: Added {col_name} to users")
+            except Exception as e:
+                db.rollback()
+
         # Optimize: Check/Add columns to 'analyses' table (Auto-Migration)
         analysis_migrations = [
             ("result", "VARCHAR"),
@@ -289,6 +305,12 @@ class AnalysisResponse(BaseModel):
 class AnalysisUpdateResult(BaseModel):
     result: str # win, loss, breakeven
 
+class ProfileUpdate(BaseModel):
+    mobile: str | None = None
+    country: str | None = None
+    gender: str | None = None
+    age_group: str | None = None
+
 class StatsResponse(BaseModel):
     total_analyses: int
     charts_analyzed: int
@@ -297,6 +319,11 @@ class StatsResponse(BaseModel):
     plan_tier: str
     trial_ends_at: datetime.datetime | None = None
     subscription_ends_at: datetime.datetime | None = None
+    # Profile Data
+    mobile: str | None = None
+    country: str | None = None
+    gender: str | None = None
+    age_group: str | None = None
 
 # Routes
 @app.post("/signup", response_model=UserResponse)
@@ -327,6 +354,23 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.put("/profile")
+def update_profile(profile: ProfileUpdate, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+        
+    user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if profile.mobile is not None: user.mobile = profile.mobile
+    if profile.country is not None: user.country = profile.country
+    if profile.gender is not None: user.gender = profile.gender
+    if profile.age_group is not None: user.age_group = profile.age_group
+    
+    db.commit()
+    return {"status": "success", "message": "Profile updated successfully"}
 
 @app.get("/health")
 def health_check():

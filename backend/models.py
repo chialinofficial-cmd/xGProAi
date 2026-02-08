@@ -37,6 +37,12 @@ class User(Base):
     trial_ends_at = Column(DateTime, nullable=True)
     subscription_ends_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    # Profile Fields
+    mobile = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    gender = Column(String, nullable=True)
+    age_group = Column(String, nullable=True)
 
 class Payment(Base):
     __tablename__ = "payments"
