@@ -111,7 +111,6 @@ export default function UploadPage() {
             const timeoutId = setTimeout(() => controller.abort(), 120000);
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
-            console.log("Debug: Using API URL:", apiUrl);
 
             // ... (fetch) ...
             const userEmail = user.email || user.providerData?.[0]?.email || '';
