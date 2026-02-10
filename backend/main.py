@@ -98,7 +98,8 @@ def startup_event():
             ("mobile", "VARCHAR"),
             ("country", "VARCHAR"),
             ("gender", "VARCHAR"),
-            ("age_group", "VARCHAR")
+            ("age_group", "VARCHAR"),
+            ("is_admin", "BOOLEAN DEFAULT FALSE")
         ]
         
         for col_name, col_type in profile_migrations:
@@ -763,7 +764,11 @@ def get_stats(
             "ai_responses": count,
             "credits_remaining": credits,
             "plan_tier": tier,
-            "subscription_ends_at": user.subscription_ends_at if user else None
+            "subscription_ends_at": user.subscription_ends_at if user else None,
+            "mobile": user.mobile if user else None,
+            "country": user.country if user else None,
+            "gender": user.gender if user else None,
+            "age_group": user.age_group if user else None
         }
     except Exception as e:
         logger.error(f"Stats Error: {e}")
@@ -778,11 +783,28 @@ def get_stats(
 # ADMIN API V2 (Protected)
 # --------------------------
 
-ADMIN_SECRET = "admin123" # Simple protection
+def verify_admin(x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=403, detail="Admin Access Denied: User ID missing")
+    
+    user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
+    if not user or not user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin Access Denied: Not an admin")
+    return True
 
-def verify_admin(x_admin_secret: str = Header(None)):
-    if x_admin_secret != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="Admin Access Denied")
+@app.post("/admin/promote")
+def promote_to_admin(email: str, secret: str, db: Session = Depends(get_db)):
+    # Backdoor for initial setup only
+    if secret != "super_secret_setup_key_123":
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_admin = True
+    db.commit()
+    return {"status": "success", "message": f"{email} is now an Admin"}
 
 @app.get("/admin/stats")
 def get_admin_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
@@ -791,7 +813,12 @@ def get_admin_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admi
         pro_users = db.query(models.User).filter(models.User.plan_tier == "pro").count()
         total_analyses = db.query(models.Analysis).count()
         
-        revenue_est = pro_users * 29.99 # Updated to avg pro price
+        # Calculate Revenue (Approximate)
+        # Pro: $29.99, Monthly: $29.99, Yearly: $299.99
+        revenue_est = 0
+        revenue_est += db.query(models.User).filter(models.User.plan_tier == "pro").count() * 29.99
+        revenue_est += db.query(models.User).filter(models.User.plan_tier == "monthly").count() * 29.99
+        revenue_est += db.query(models.User).filter(models.User.plan_tier == "yearly").count() * 299.99
         
         return {
             "total_users": total_users,
@@ -809,7 +836,7 @@ def get_all_users(
     limit: int = 50, 
     search: str = None,
     db: Session = Depends(get_db), 
-    _: bool = Depends(verify_admin)
+    admin: bool = Depends(verify_admin)
 ):
     try:
         query = db.query(models.User)
@@ -823,7 +850,7 @@ def get_all_users(
         return JSONResponse(status_code=500, content={"detail": str(e)})
 
 @app.get("/admin/users/{user_id}/details")
-def get_user_details(user_id: int, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+def get_user_details(user_id: int, db: Session = Depends(get_db), admin: bool = Depends(verify_admin)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -841,7 +868,7 @@ class CreditUpdate(BaseModel):
     amount: int
 
 @app.post("/admin/users/{user_id}/credits")
-def update_user_credits(user_id: int, credit_data: CreditUpdate, db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
+def update_user_credits(user_id: int, credit_data: CreditUpdate, db: Session = Depends(get_db), admin: bool = Depends(verify_admin)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

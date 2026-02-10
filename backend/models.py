@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
 from database import Base
 import datetime
 
@@ -35,14 +35,14 @@ class User(Base):
     daily_usage_count = Column(Integer, default=0) # Resets daily
     last_usage_date = Column(DateTime, nullable=True) # Tracks last usage for reset
     trial_ends_at = Column(DateTime, nullable=True)
-    subscription_ends_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     
     # Profile Fields
     mobile = Column(String, nullable=True)
     country = Column(String, nullable=True)
     gender = Column(String, nullable=True)
     age_group = Column(String, nullable=True)
+    is_admin = Column(Boolean, default=False)
 
 class Payment(Base):
     __tablename__ = "payments"

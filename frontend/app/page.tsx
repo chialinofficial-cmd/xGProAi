@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './context/AuthContext';
 import ParticlesBackground from '../components/ParticlesBackground';
@@ -49,7 +50,7 @@ export default function Home() {
 
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="xGProAi" className="w-24 h-auto rounded-lg" />
+            <Image src="/logo.png" alt="xGProAi" width={96} height={96} className="w-24 h-auto rounded-lg" priority />
           </div>
 
           {/* Centered Links (Desktop) */}
@@ -133,10 +134,13 @@ export default function Home() {
                 </div>
               </div>
               {/* Generated Dashboard Preview */}
-              <img
+              <Image
                 src="/dashboard_analysis_preview.png"
                 alt="xGProAi Dashboard Preview"
+                width={1200}
+                height={675}
                 className="w-full rounded-lg border border-border-subtle"
+                unoptimized
               />
             </div>
           </div>

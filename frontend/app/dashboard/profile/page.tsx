@@ -1,32 +1,37 @@
 "use client";
 
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ProfilePage() {
     const { user } = useAuth();
-    const [profileData, setProfileData] = useState<any>(null);
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // Form State
     const [formData, setFormData] = useState({
         mobile: '',
         country: '',
         gender: '',
         age_group: ''
     });
-    const [isSaving, setIsSaving] = useState(false);
-    const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
 
     useEffect(() => {
         if (!user) return;
-        const fetchProfile = async () => {
+
+        const fetchStats = async () => {
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 const res = await fetch(`${apiUrl}/stats`, {
                     headers: { 'X-User-ID': user.uid }
                 });
+
                 if (res.ok) {
                     const data = await res.json();
-                    setProfileData(data);
+                    setStats(data);
+                    // Pre-fill form
                     setFormData({
                         mobile: data.mobile || '',
                         country: data.country || '',
@@ -34,226 +39,178 @@ export default function ProfilePage() {
                         age_group: data.age_group || ''
                     });
                 }
-            } catch (err) {
-                console.error(err);
+            } catch (error) {
+                console.error("Failed to load profile", error);
+            } finally {
+                setLoading(false);
             }
         };
-        fetchProfile();
+
+        fetchStats();
     }, [user]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSave = async () => {
-        if (!user) return;
-        setIsSaving(true);
-        setSaveMessage({ type: '', text: '' });
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        setMessage(null);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const res = await fetch(`${apiUrl}/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-User-ID': user.uid
+                    'X-User-ID': user?.uid || ''
                 },
                 body: JSON.stringify(formData)
             });
 
             if (res.ok) {
-                setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
-                // Refresh profile data to ensure sync
-                const statsRes = await fetch(`${apiUrl}/stats`, {
-                    headers: { 'X-User-ID': user.uid }
-                });
-                if (statsRes.ok) {
-                    const data = await statsRes.json();
-                    setProfileData(data);
-                }
+                setMessage({ type: 'success', text: 'Profile updated successfully!' });
             } else {
-                setSaveMessage({ type: 'error', text: 'Failed to update profile.' });
+                setMessage({ type: 'error', text: 'Failed to update profile.' });
             }
         } catch (error) {
-            console.error(error);
-            setSaveMessage({ type: 'error', text: 'An error occurred.' });
+            setMessage({ type: 'error', text: 'An error occurred.' });
         } finally {
-            setIsSaving(false);
-            setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
+            setSaving(false);
         }
     };
 
+    if (loading) {
+        return <div className="animate-pulse text-center p-12">Loading Profile...</div>;
+    }
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in pb-12">
+            <h1 className="text-3xl font-bold text-white mb-6">User Profile</h1>
 
-            {/* Header Section */}
-            <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-white mb-2">My Profile</h1>
-                <p className="text-gray-400">Manage your account information and preferences</p>
-                {saveMessage.text && (
-                    <div className={`mt-4 px-4 py-2 rounded-lg text-sm font-medium inline-block ${saveMessage.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {saveMessage.text}
-                    </div>
-                )}
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Left: Profile Form */}
-                <div className="lg:col-span-2 glass-panel rounded-xl p-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-lg font-bold text-white">Profile Information</h2>
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className={`flex items-center gap-2 px-4 py-2 border border-white/10 rounded-lg text-white text-sm hover:bg-white/5 transition-colors backdrop-blur-sm ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            {isSaving ? (
-                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                            ) : (
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            )}
-                            {isSaving ? 'Saving...' : 'Save Changes'}
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="w-16 h-16 rounded-full bg-blue-600 overflow-hidden relative group cursor-pointer ring-4 ring-white/5">
-                            {/* Placeholder for user avatar */}
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-xl font-bold text-white uppercase shadow-inner">
-                                {user?.displayName ? user.displayName.substring(0, 2) : "U"}
-                            </div>
+                {/* Left: Subscription & Stats */}
+                <div className="glass-panel p-8 rounded-xl space-y-6">
+                    <div className="flex items-center gap-4 border-b border-white/10 pb-6">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center text-2xl font-bold text-black">
+                            {user?.displayName?.charAt(0) || 'U'}
                         </div>
                         <div>
-                            <h3 className="text-white font-bold text-lg">{user?.displayName || "User"}</h3>
-                            <p className="text-gray-400 text-sm">Full Stack Trader</p>
+                            <h2 className="text-xl font-bold text-white">{user?.displayName || 'User'}</h2>
+                            <p className="text-gray-400 text-sm">{user?.email}</p>
+                            <span className={`inline-block mt-2 px-2 py-0.5 text-[10px] font-bold uppercase rounded ${stats?.plan_tier === 'pro' ? 'bg-gold text-black' : 'bg-gray-700 text-gray-300'}`}>
+                                {stats?.plan_tier} Plan
+                            </span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Name</label>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white/5 p-4 rounded-lg">
+                            <p className="text-gray-400 text-xs uppercase">Credits</p>
+                            <p className="text-2xl font-bold text-white">{stats?.credits_remaining}</p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-lg">
+                            <p className="text-gray-400 text-xs uppercase">Analyses</p>
+                            <p className="text-2xl font-bold text-white">{stats?.total_analyses}</p>
+                        </div>
+                    </div>
+
+                    {stats?.subscription_ends_at && (
+                        <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg">
+                            <p className="text-blue-200 text-sm">
+                                <strong>Subscription Active</strong><br />
+                                Renews on {new Date(stats.subscription_ends_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right: Edit Details */}
+                <div className="glass-panel p-8 rounded-xl">
+                    <h3 className="text-xl font-bold text-white mb-6">Personal Details</h3>
+
+                    {message && (
+                        <div className={`p-3 rounded-lg mb-4 text-sm ${message.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleUpdateProfile} className="space-y-4">
+                        <div>
+                            <label className="block text-gray-400 text-xs uppercase font-bold mb-2">Full Name (Read Only)</label>
                             <input
                                 type="text"
-                                defaultValue={user?.displayName || ""}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm opacity-50 cursor-not-allowed"
-                                readOnly
+                                value={user?.displayName || ''}
+                                disabled
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-gray-500 cursor-not-allowed"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Email</label>
-                            <input
-                                type="email"
-                                defaultValue={user?.email || ""}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm opacity-50 cursor-not-allowed"
-                                readOnly
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Mobile</label>
+
+                        <div>
+                            <label className="block text-gray-400 text-xs uppercase font-bold mb-2">Mobile Number</label>
                             <input
                                 type="tel"
-                                name="mobile"
                                 value={formData.mobile}
-                                onChange={handleInputChange}
-                                placeholder="Add phone number"
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600 backdrop-blur-sm"
+                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                placeholder="+1234567890"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-gold outline-none transition-colors"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Country</label>
-                            <input
-                                type="text"
-                                name="country"
-                                value={formData.country}
-                                onChange={handleInputChange}
-                                placeholder="Add Country"
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-gray-600 backdrop-blur-sm"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Gender</label>
+
+                        <div>
+                            <label className="block text-gray-400 text-xs uppercase font-bold mb-2">Country</label>
                             <select
-                                name="gender"
-                                value={formData.gender}
-                                onChange={handleInputChange}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm"
+                                value={formData.country}
+                                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-gold outline-none transition-colors"
                             >
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
+                                <option value="">Select Country</option>
+                                <option value="USA">United States</option>
+                                <option value="UK">United Kingdom</option>
+                                <option value="CA">Canada</option>
+                                <option value="AU">Australia</option>
+                                <option value="ZA">South Africa</option>
+                                <option value="NG">Nigeria</option>
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">Age Group</label>
-                            <select
-                                name="age_group"
-                                value={formData.age_group}
-                                onChange={handleInputChange}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none backdrop-blur-sm"
-                            >
-                                <option value="">Select Age Group</option>
-                                <option value="18-25">18-25</option>
-                                <option value="26-39">26-39</option>
-                                <option value="40-60">40-60</option>
-                                <option value="60+">60+</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Right: Account Details */}
-                <div className="glass-card rounded-xl p-8 h-fit">
-                    <h2 className="text-lg font-bold text-white mb-6">Account Details</h2>
-
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3 text-gray-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                <span className="text-sm">Member Since</span>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-gray-400 text-xs uppercase font-bold mb-2">Gender</label>
+                                <select
+                                    value={formData.gender}
+                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-gold outline-none transition-colors"
+                                >
+                                    <option value="">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
-                            <span className="text-white font-medium text-sm">Jan 2026</span>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3 text-gray-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                                <span className="text-sm">Plan Type</span>
-                            </div>
-                            <div className="text-right">
-                                <span className={`text-xs px-2 py-1 rounded border font-bold uppercase ${profileData?.plan_tier === 'pro' ? 'bg-gold/10 text-gold border-gold/30' : 'bg-white/5 text-gray-400 border-white/10'}`}>
-                                    {profileData?.plan_tier || "free"}
-                                </span>
-                                {profileData?.trial_ends_at && profileData.plan_tier === 'trial' && (
-                                    <p className="text-[10px] text-yellow-500 mt-1">
-                                        Exp: {new Date(profileData.trial_ends_at).toLocaleDateString()}
-                                    </p>
-                                )}
+                            <div>
+                                <label className="block text-gray-400 text-xs uppercase font-bold mb-2">Age Group</label>
+                                <select
+                                    value={formData.age_group}
+                                    onChange={(e) => setFormData({ ...formData, age_group: e.target.value })}
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-gold outline-none transition-colors"
+                                >
+                                    <option value="">Select</option>
+                                    <option value="18-24">18-24</option>
+                                    <option value="25-34">25-34</option>
+                                    <option value="35-44">35-44</option>
+                                    <option value="45+">45+</option>
+                                </select>
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3 text-gray-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                <span className="text-sm">Next Billing</span>
-                            </div>
-                            <span className="text-white font-medium text-sm">
-                                {profileData?.subscription_ends_at ? new Date(profileData.subscription_ends_at).toLocaleDateString() : 'N/A'}
-                            </span>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3 text-gray-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                                <span className="text-sm">Credits Left</span>
-                            </div>
-                            <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-500/20">
-                                {profileData?.plan_tier === 'pro' ? '∞' : (profileData?.credits_remaining || 0)}
-                            </span>
-                        </div>
-                    </div>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="w-full bg-gold hover:bg-gold-light text-black font-bold py-3 rounded-lg transition-all mt-4 disabled:opacity-50"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
