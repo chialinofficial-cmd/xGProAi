@@ -48,3 +48,4 @@ pandas
 pandas_ta
 numpy
 Pillow
+yfinance

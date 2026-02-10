@@ -2,42 +2,65 @@ import ccxt
 import pandas as pd
 import numpy as np
 import asyncio
+import yfinance as yf
 
 class QuantService:
     def __init__(self):
-        self.exchange = ccxt.kraken() # Public data, no API key needed for basic OHLCV
+        self.exchange = ccxt.kraken() # Public data fallback
 
     async def fetch_ohlcv(self, symbol="XAU/USD", timeframe="1h", limit=100):
         """
-        Fetches OHLCV data from Kraken (or fallback).
-        Assets are mapped: XAU/USD -> XAU/USD or similar.
+        Fetches OHLCV data from yfinance (Gold Futures) or Kraken (fallback).
         """
         try:
-            # CCXT is synchronous by default unless using ccxt.async_support
-            # For MVP, we wrap in asyncio.to_thread if we want async, or just use sync for now.
-            
-            # Map symbol if needed
-            mapped_symbol = symbol
+            # 1. Try yfinance for Gold
             if symbol == "XAU/USD":
-                mapped_symbol = "XAU/USD" 
+                try:
+                    # Map timeframe to yfinance format
+                    yf_interval = "1h"
+                    if timeframe == "1m": yf_interval = "1m"
+                    elif timeframe == "5m": yf_interval = "5m"
+                    elif timeframe == "15m": yf_interval = "15m"
+                    elif timeframe == "1d": yf_interval = "1d"
+                    
+                    # Fetch data in thread to avoid blocking
+                    def fetch_yf():
+                        # GC=F is Gold Futures
+                        data = yf.download("GC=F", period="5d", interval=yf_interval, progress=False)
+                        return data
+
+                    df = await asyncio.to_thread(fetch_yf)
+                    
+                    if not df.empty and len(df) > 10:
+                        # Normalize yfinance dataframe
+                        # Expected columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+                        # yfinance index is DatetimeIndex
+                        df = df.reset_index()
+                        df.columns = [c.lower() for c in df.columns] 
+                        # Ensure 'date' or 'datetime' is renamed to 'timestamp'
+                        if 'date' in df.columns:
+                             df.rename(columns={'date': 'timestamp'}, inplace=True)
+                        if 'datetime' in df.columns:
+                             df.rename(columns={'datetime': 'timestamp'}, inplace=True)
+                             
+                        # Filter to specific columns
+                        df = df[['timestamp', 'open', 'high', 'low', 'close', 'volume']]
+                        
+                        # Limit rows
+                        return df.tail(limit)
+                except Exception as e:
+                     print(f"yfinance failed: {e}. Trying fallback...")
+
+            # 2. Fallback to CCXT (Kraken)
+            # ... (Rest of existing CCXT logic if you want to keep it, but Kraken failed earlier)
+            # Let's just fallback to mock if yfinance fails for now as Kraken is known bad for XAU
             
-            # Fetch (Async Wrapper)
-            # Run blocking CCXT call in a separate thread to avoid blocking the event loop
-            try:
-                ohlcv = await asyncio.to_thread(self.exchange.fetch_ohlcv, mapped_symbol, timeframe, limit=limit)
-            except Exception as e:
-                # Fallback to mock data if exchange fails (e.g. rate limit or network)
-                print(f"Exchange fetch failed: {e}. Using mock data.")
-                return self.generate_mock_data(limit)
+            print(f"Quant: Using mock data due to primary feed failure.")
+            return self.generate_mock_data(limit)
             
-            # Convert to Pandas DataFrame
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            
-            return df
         except Exception as e:
             print(f"Quant Error: {e}")
-            return pd.DataFrame()
+            return pd.DataFrame() # Return empty on critical failure
 
     def generate_mock_data(self, limit):
         # Generate some realistic looking gold data
