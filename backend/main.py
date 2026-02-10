@@ -81,7 +81,8 @@ def startup_event():
             ("plan_tier", "VARCHAR DEFAULT 'trial'"),
             ("credits_balance", "INTEGER DEFAULT 3"),
             ("daily_usage_count", "INTEGER DEFAULT 0"),
-            ("last_usage_date", "TIMESTAMP")
+            ("last_usage_date", "TIMESTAMP"),
+            ("subscription_ends_at", "TIMESTAMP")
         ]
         
         for col_name, col_type in column_migrations:
@@ -428,7 +429,8 @@ def force_migration(db: Session = Depends(get_db)):
         ("plan_tier", "VARCHAR DEFAULT 'trial'"),
         ("credits_balance", "INTEGER DEFAULT 3"),
         ("daily_usage_count", "INTEGER DEFAULT 0"),
-        ("last_usage_date", "TIMESTAMP")
+        ("last_usage_date", "TIMESTAMP"),
+        ("subscription_ends_at", "TIMESTAMP")
     ]
     
     for col_name, col_type in user_migrations:

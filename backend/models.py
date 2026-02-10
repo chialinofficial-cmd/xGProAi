@@ -35,6 +35,7 @@ class User(Base):
     daily_usage_count = Column(Integer, default=0) # Resets daily
     last_usage_date = Column(DateTime, nullable=True) # Tracks last usage for reset
     trial_ends_at = Column(DateTime, nullable=True)
+    subscription_ends_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     
     # Profile Fields
