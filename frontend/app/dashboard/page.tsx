@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
-} from 'recharts';
+// import {
+//     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
+// } from 'recharts';
+import { AdvancedChart } from '../../components/AdvancedChart';
 
 export default function DashboardHome() {
     const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function DashboardHome() {
         plan_tier: 'trial'
     });
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    const [marketData, setMarketData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -45,6 +47,14 @@ export default function DashboardHome() {
                     const activityData = await activityRes.json();
                     setRecentActivity(activityData);
                 }
+
+                // Fetch Market Data (XAU/USD)
+                const marketRes = await fetch(`${apiUrl}/market-data/XAU-USD?timeframe=1h`);
+                if (marketRes.ok) {
+                    const data = await marketRes.json();
+                    setMarketData(data);
+                }
+
             } catch (error) {
                 console.error("Failed to load dashboard data", error);
             } finally {
@@ -55,12 +65,7 @@ export default function DashboardHome() {
         fetchData();
     }, [user]);
 
-    // Prepare Chart Data
-    const chartData = [
-        { name: 'Uploads', value: stats.total_analyses },
-        { name: 'Analyzed', value: stats.charts_analyzed },
-        { name: 'AI Responses', value: stats.ai_responses },
-    ];
+    // Shape stats for any other usage if needed, but we removed the BarChart
 
     if (loading) {
         return (
@@ -160,49 +165,38 @@ export default function DashboardHome() {
             {/* Split Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* Left: AI Analysis Summary (Recharts) */}
-                <div className="lg:col-span-2 glass-panel rounded-xl p-6 relative">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="p-2 bg-white/5 rounded-lg">
-                            <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                {/* Left: Live Market Chart (AdvancedChart) */}
+                <div className="lg:col-span-2 glass-panel rounded-xl p-6 relative flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 bg-white/5 rounded-lg">
+                                <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">XAU/USD Live Market</h3>
+                                <p className="text-[10px] text-gray-400">Real-time Gold/Dollar Interbank Rate (1H)</p>
+                            </div>
                         </div>
-                        <h3 className="text-lg font-bold text-white">Activity Overview</h3>
+                        <div className="flex gap-2">
+                            <span className="px-2 py-1 text-xs bg-white/10 rounded text-white font-mono">1H</span>
+                        </div>
                     </div>
 
                     {/* Chart Area */}
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis
-                                    dataKey="name"
-                                    stroke="#6b7280"
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                    axisLine={false}
-                                    tickLine={false}
-                                />
-                                <YAxis
-                                    stroke="#6b7280"
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                    axisLine={false}
-                                    tickLine={false}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                    contentStyle={{
-                                        backgroundColor: 'rgba(10,10,10,0.9)',
-                                        borderColor: 'rgba(255,255,255,0.1)',
-                                        borderRadius: '8px',
-                                        color: '#fff'
-                                    }}
-                                />
-                                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={50}>
-                                    {chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={['#3b82f6', '#22c55e', '#a855f7'][index % 3]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <div className="flex-1 w-full min-h-[350px]">
+                        {marketData.length > 0 ? (
+                            <AdvancedChart
+                                data={marketData}
+                                colors={{
+                                    backgroundColor: 'transparent',
+                                    textColor: '#9ca3af',
+                                }}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500 animate-pulse">
+                                Loading Market Data...
+                            </div>
+                        )}
                     </div>
                 </div>
 

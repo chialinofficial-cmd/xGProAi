@@ -81,11 +81,33 @@ class QuantService:
             true_range = np.max(ranges, axis=1)
             return true_range.rolling(window=period).mean()
 
+        # Helper for MACD
+        def calculate_macd(series, fast=12, slow=26, signal=9):
+            ema_fast = series.ewm(span=fast, adjust=False).mean()
+            ema_slow = series.ewm(span=slow, adjust=False).mean()
+            macd = ema_fast - ema_slow
+            signal_line = macd.ewm(span=signal, adjust=False).mean()
+            return macd, signal_line
+
+        # Helper for Bollinger Bands
+        def calculate_bb(series, period=20, std_dev=2):
+            sma = series.rolling(window=period).mean()
+            std = series.rolling(window=period).std()
+            upper = sma + (std * std_dev)
+            lower = sma - (std * std_dev)
+            return upper, lower
+
         # Calculation
         df['EMA_20'] = calculate_ema(df['close'], 20)
         df['EMA_50'] = calculate_ema(df['close'], 50)
         df['RSI_14'] = calculate_rsi(df['close'], 14)
         df['ATRr_14'] = calculate_atr(df, 14)
+        
+        # MACD
+        df['MACD'], df['MACD_Signal'] = calculate_macd(df['close'])
+        
+        # Bollinger Bands
+        df['BB_Upper'], df['BB_Lower'] = calculate_bb(df['close'])
         
         return df
 
@@ -114,9 +136,33 @@ class QuantService:
         current_atr = current['ATRr_14']
         is_volatile = current_atr > (avg_atr * 1.5) if not pd.isna(avg_atr) else False
         
+        # AI Levels Calculation
+        entry = current['close']
+        sl = 0.0
+        tp = 0.0
+        
+        if trend == "Bullish":
+            # SL below recent support (BB Lower or EMA50)
+            sl = current['BB_Lower'] if not pd.isna(current['BB_Lower']) else (current['EMA_50'] - current_atr)
+            risk = entry - sl
+            if risk > 0:
+                tp = entry + (risk * 2) # 1:2 Risk Reward
+        elif trend == "Bearish":
+            # SL above recent resistance (BB Upper or EMA50)
+            sl = current['BB_Upper'] if not pd.isna(current['BB_Upper']) else (current['EMA_50'] + current_atr)
+            risk = sl - entry
+            if risk > 0:
+                tp = entry - (risk * 2) # 1:2 Risk Reward
+        
         return {
             "trend": trend,
             "current_price": current['close'],
             "volatility_alert": bool(is_volatile),
-            "rsi": float(current['RSI_14']) if not pd.isna(current['RSI_14']) else 50.0
+            "rsi": float(current['RSI_14']) if not pd.isna(current['RSI_14']) else 50.0,
+            "macd_signal": "Buy" if current['MACD'] > current['MACD_Signal'] else "Sell",
+            "ai_levels": {
+                "entry": float(entry),
+                "sl": float(sl),
+                "tp": float(tp)
+            }
         }
