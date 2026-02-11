@@ -65,7 +65,7 @@ export function AdminAnalytics({ usageData, assetData, revenueData }: AdminAnaly
                                 </Pie>
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
-                                    formatter={(value: number) => [`$${value}`, 'Revenue']}
+                                    formatter={(value: any) => [`$${value}`, 'Revenue']}
                                 />
                                 <Legend />
                             </PieChart>
