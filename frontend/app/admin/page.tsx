@@ -2,42 +2,61 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { AdminAnalytics } from '../../components/admin/AdminAnalytics';
+import { UserTable } from '../../components/admin/UserTable';
+import { AIHealth } from '../../components/admin/AIHealth';
 
 export default function AdminOverview() {
     const { user } = useAuth();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [usageData, setUsageData] = useState<any[]>([]);
+    const [assetData, setAssetData] = useState<any[]>([]);
+    const [revenueData, setRevenueData] = useState<any[]>([]);
+    const [aiStats, setAiStats] = useState<any>(null);
 
     useEffect(() => {
         if (!user) return;
 
-        const fetchAdminStats = async () => {
+        const fetchAdminData = async () => {
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const res = await fetch(`${apiUrl}/admin/stats`, {
-                    headers: { 'X-User-ID': user.uid }
-                });
+                const headers = { 'X-User-ID': user.uid };
 
-                if (res.ok) {
-                    const data = await res.json();
-                    setStats(data);
+                // Parallel Fetching
+                const [statsRes, usageRes, assetRes, financeRes, aiRes] = await Promise.all([
+                    fetch(`${apiUrl}/admin/stats`, { headers }),
+                    fetch(`${apiUrl}/admin/analytics/usage`, { headers }),
+                    fetch(`${apiUrl}/admin/analytics/assets`, { headers }),
+                    fetch(`${apiUrl}/admin/finance/stats`, { headers }),
+                    fetch(`${apiUrl}/admin/ai/stats`, { headers })
+                ]);
+
+                if (statsRes.ok) setStats(await statsRes.json());
+                if (usageRes.ok) setUsageData(await usageRes.json());
+                if (assetRes.ok) setAssetData(await assetRes.json());
+                if (financeRes.ok) {
+                    const finance = await financeRes.json();
+                    setRevenueData(finance.revenue_breakdown || []);
                 }
+                if (aiRes.ok) setAiStats(await aiRes.json());
+
             } catch (error) {
-                console.error("Failed to load admin stats", error);
+                console.error("Failed to load admin data", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchAdminStats();
+        fetchAdminData();
     }, [user]);
 
     if (loading) {
-        return <div className="text-gold animate-pulse">Loading Admin Stats...</div>;
+        return <div className="text-gold animate-pulse">Loading Admin Intelligence...</div>;
     }
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in pb-12">
             <div>
                 <h1 className="text-3xl font-bold text-white mb-2">Admin Overview</h1>
                 <p className="text-gray-400">System health and business metrics.</p>
@@ -45,7 +64,7 @@ export default function AdminOverview() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
+                {/* ... (Keep existing Stat Cards) ... */}
                 {/* Total Users */}
                 <div className="glass-panel p-6 rounded-xl flex items-center justify-between">
                     <div>
@@ -91,7 +110,18 @@ export default function AdminOverview() {
                 </div>
             </div>
 
-            {/* Recent Activity or Charts could go here */}
+            {/* AI Health Monitor (New) */}
+            <AIHealth stats={aiStats} />
+
+            {/* Analytics Component */}
+            <AdminAnalytics
+                usageData={usageData}
+                assetData={assetData}
+                revenueData={revenueData}
+            />
+
+            {/* User Management */}
+            <UserTable />
         </div>
     );
 }
