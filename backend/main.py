@@ -795,7 +795,7 @@ def verify_admin(x_user_id: str = Header(None), db: Session = Depends(get_db)):
     return True
 
 @app.post("/admin/promote")
-def promote_to_admin(email: str, secret: str, db: Session = Depends(get_db)):
+def promote_to_admin(email: str, secret: str, uid: str = None, db: Session = Depends(get_db)):
     # Backdoor for initial setup only
     if secret != "super_secret_setup_key_123":
         raise HTTPException(status_code=403, detail="Invalid secret")
@@ -805,8 +805,12 @@ def promote_to_admin(email: str, secret: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     
     user.is_admin = True
+    if uid:
+        user.firebase_uid = uid
+        logger.info(f"Linked UID {uid} to user {email}")
+        
     db.commit()
-    return {"status": "success", "message": f"{email} is now an Admin"}
+    return {"status": "success", "message": f"{email} is now an Admin (UID Linked)"}
 
 @app.get("/admin/stats")
 def get_admin_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):
