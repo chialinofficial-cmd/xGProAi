@@ -389,8 +389,7 @@ def fix_database_schema(db: Session = Depends(get_db)):
     """
     try:
         # Avoid circular imports by importing models inside function
-        import models
-        from database import engine
+        # models and engine are already imported globally
         
         models.Base.metadata.drop_all(bind=engine)
         models.Base.metadata.create_all(bind=engine)

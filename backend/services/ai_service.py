@@ -30,32 +30,6 @@ class AIService:
             self.client = None
             self.models_to_try = []
 
-    def resize_image_if_needed(self, image_path, max_size=1024):
-        """
-        Resizes image to max_size (width or height) to optimize payload and speed.
-        Returns bytes of resized image.
-        """
-        try:
-            with Image.open(image_path) as img:
-                # Convert to RGB if needed
-                if img.mode in ("RGBA", "P"):
-                    img = img.convert("RGB")
-                    
-                width, height = img.size
-                if width > max_size or height > max_size:
-                    ratio = min(max_size / width, max_size / height)
-                    new_size = (int(width * ratio), int(height * ratio))
-                    img = img.resize(new_size, Image.Resampling.LANCZOS)
-                    logger.info(f"Resized image from {width}x{height} to {new_size}")
-                
-                # Save to bytes
-                img_byte_arr = io.BytesIO()
-                img.save(img_byte_arr, format='JPEG', quality=85)
-                return img_byte_arr.getvalue()
-        except Exception as e:
-            logger.error(f"Resize failed: {e}")
-            with open(image_path, "rb") as f:
-                return f.read()
 
     def resize_image_if_needed(self, image_path, max_size=1024):
         """
@@ -87,10 +61,6 @@ class AIService:
         mime_type, _ = mimetypes.guess_type(image_path)
         if not mime_type or mime_type not in ["image/jpeg", "image/png", "image/webp"]:
             mime_type = "image/jpeg" # Fallback
-
-        # Read and encode image to base64
-        # with open(image_path, "rb") as image_file:
-        #     image_data = base64.b64encode(image_file.read()).decode("utf-8")
         
         # Optimize Image Size for Speed
         try:
