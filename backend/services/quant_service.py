@@ -21,46 +21,96 @@ class QuantService:
                     if timeframe == "1m": yf_interval = "1m"
                     elif timeframe == "5m": yf_interval = "5m"
                     elif timeframe == "15m": yf_interval = "15m"
+                    elif timeframe == "30m": yf_interval = "30m"
                     elif timeframe == "1d": yf_interval = "1d"
                     
                     # Fetch data in thread to avoid blocking
                     def fetch_yf():
                         # GC=F is Gold Futures
-                        data = yf.download("GC=F", period="5d", interval=yf_interval, progress=False)
+                        data = yf.download("GC=F", period="1mo", interval=yf_interval, progress=False)
                         return data
 
                     df = await asyncio.to_thread(fetch_yf)
                     
                     if not df.empty and len(df) > 10:
                         # Normalize yfinance dataframe
-                        # Expected columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-                        # yfinance index is DatetimeIndex
                         df = df.reset_index()
                         df.columns = [c.lower() for c in df.columns] 
-                        # Ensure 'date' or 'datetime' is renamed to 'timestamp'
                         if 'date' in df.columns:
                              df.rename(columns={'date': 'timestamp'}, inplace=True)
                         if 'datetime' in df.columns:
                              df.rename(columns={'datetime': 'timestamp'}, inplace=True)
                              
-                        # Filter to specific columns
                         df = df[['timestamp', 'open', 'high', 'low', 'close', 'volume']]
                         
-                        # Limit rows
                         return df.tail(limit)
                 except Exception as e:
                      print(f"yfinance failed: {e}. Trying fallback...")
 
-            # 2. Fallback to CCXT (Kraken)
-            # ... (Rest of existing CCXT logic if you want to keep it, but Kraken failed earlier)
-            # Let's just fallback to mock if yfinance fails for now as Kraken is known bad for XAU
-            
+            # 2. Fallback to Mock
             print(f"Quant: Using mock data due to primary feed failure.")
             return self.generate_mock_data(limit)
             
         except Exception as e:
             print(f"Quant Error: {e}")
-            return pd.DataFrame() # Return empty on critical failure
+            return pd.DataFrame() 
+
+    async def get_multi_timeframe_analysis(self, symbol="XAU/USD"):
+        """
+        Fetches 1H, 4H (resampled), and Daily data to build a comprehensive market context.
+        """
+        try:
+            # Fetch 1H and Daily in parallel
+            task_1h = self.fetch_ohlcv(symbol, "1h", limit=200)
+            task_1d = self.fetch_ohlcv(symbol, "1d", limit=50)
+            
+            df_1h, df_1d = await asyncio.gather(task_1h, task_1d)
+            
+            # Construct 4H from 1H
+            if not df_1h.empty:
+                df_1h.set_index('timestamp', inplace=True)
+                df_4h = df_1h.resample('4h').agg({
+                    'open': 'first',
+                    'high': 'max',
+                    'low': 'min',
+                    'close': 'last',
+                    'volume': 'sum'
+                }).dropna()
+                df_1h.reset_index(inplace=True)
+                df_4h.reset_index(inplace=True)
+            else:
+                df_4h = pd.DataFrame()
+
+            # Analyze Each Timeframe
+            analysis_1h = self.analyze_market_structure(df_1h)
+            analysis_4h = self.analyze_market_structure(df_4h)
+            analysis_1d = self.analyze_market_structure(df_1d)
+            
+            # Synthesize Context
+            trends = {
+                "1h": analysis_1h.get("trend", "Neutral"),
+                "4h": analysis_4h.get("trend", "Neutral"),
+                "1d": analysis_1d.get("trend", "Neutral")
+            }
+            
+            # Calculate Alignment
+            alignment = "Mixed"
+            if trends["1h"] == trends["4h"] == trends["1d"]:
+                alignment = f"Strong {trends['1h']}"
+            elif trends["4h"] == trends["1d"]:
+                alignment = f"{trends['1d']} (Higher Timeframe Dominance)"
+                
+            return {
+                "alignment": alignment,
+                "trends": trends,
+                "1h": analysis_1h,
+                "4h": analysis_4h,
+                "1d": analysis_1d
+            }
+            
+        except Exception as e:
+            print(f"Multi-Timeframe Analysis Failed: {e}")
+            return {}
 
     def generate_mock_data(self, limit):
         # Generate some realistic looking gold data
@@ -132,13 +182,15 @@ class QuantService:
         # Bollinger Bands
         df['BB_Upper'], df['BB_Lower'] = calculate_bb(df['close'])
         
+        # ADX (Simple approximation if needed, or skip for now)
+        
         return df
 
     def analyze_market_structure(self, df):
         """
         Basic Quant Analysis: Trend & Volatility
         """
-        if df.empty or len(df) < 50:
+        if df.empty or len(df) < 20: # Lower threshold to 20 for D1
             return {"status": "error", "message": "Insufficient data"}
             
         df = self.calculate_indicators(df)

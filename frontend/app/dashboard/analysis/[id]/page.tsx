@@ -37,6 +37,7 @@ interface Analysis {
     bias: string;
     confidence: number;
     summary: string;
+    recommendation?: string; // BUY, SELL, WAIT
     created_at: string;
     image_path: string;
     entry?: number;
@@ -150,6 +151,12 @@ export default function AnalysisPage() {
     const signalColor = isBullish ? 'text-green-500' : 'text-red-500';
     const borderColor = isBullish ? 'border-green-500/50' : 'border-red-500/50';
     const bgGradient = isBullish ? 'from-green-500/10' : 'from-red-500/10';
+
+    // Explicit Recommendation Logic
+    const recommendation = analysis.recommendation || (isBullish && analysis.confidence > 75 ? 'BUY' : isBearish && analysis.confidence > 75 ? 'SELL' : 'WAIT');
+    let recColor = 'text-gray-400 border-gray-500/50 bg-gray-500/10';
+    if (recommendation === 'BUY') recColor = 'text-green-500 border-green-500/50 bg-green-500/10';
+    if (recommendation === 'SELL') recColor = 'text-red-500 border-red-500/50 bg-red-500/10';
 
     const currentPrice = analysis.entry || 0;
     const slPrice = analysis.sl || 0;
@@ -308,6 +315,12 @@ via xGProAi
                         <div className={`absolute top-0 right-0 w-32 h-32 ${bgGradient} blur-3xl rounded-full -mr-10 -mt-10 pointer-events-none`}></div>
 
                         <div className="relative z-10">
+                            {/* RECOMMENDATION BADGE */}
+                            <div className={`mb-6 p-4 rounded-xl border ${recColor} flex flex-col items-center justify-center shadow-lg backdrop-blur-sm`}>
+                                <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">AI Recommendation</p>
+                                <p className="text-5xl font-black tracking-widest drop-shadow-md">{recommendation}</p>
+                            </div>
+
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Signal Confidence</p>

@@ -52,7 +52,8 @@ def startup_event():
             ("entry", "FLOAT"),
             ("sl", "FLOAT"),
             ("tp1", "FLOAT"),
-            ("tp2", "FLOAT")
+            ("tp2", "FLOAT"),
+            ("recommendation", "VARCHAR")
         ]
 
         for col_name, col_type in analysis_migrations:
@@ -120,7 +121,8 @@ def startup_event():
             ("entry", "FLOAT"),
             ("sl", "FLOAT"),
             ("tp1", "FLOAT"),
-            ("tp2", "FLOAT")
+            ("tp2", "FLOAT"),
+            ("recommendation", "VARCHAR")
         ]
 
         for col_name, col_type in analysis_migrations:
@@ -291,6 +293,7 @@ class AnalysisResponse(BaseModel):
     bias: str
     confidence: int
     summary: str
+    recommendation: str | None = None
     entry: float | None = None
     sl: float | None = None
     tp1: float | None = None
@@ -412,7 +415,8 @@ def force_migration(db: Session = Depends(get_db)):
         ("entry", "FLOAT"),
         ("sl", "FLOAT"),
         ("tp1", "FLOAT"),
-        ("tp2", "FLOAT")
+        ("tp2", "FLOAT"),
+        ("recommendation", "VARCHAR")
     ]
 
     for col_name, col_type in analysis_migrations:
@@ -621,14 +625,14 @@ async def analyze_chart(
             market_sentiment = sentiment_service.get_market_sentiment()
             logger.info(f"   Sentiment: {market_sentiment.get('label')} ({market_sentiment.get('score')})")
 
-            # --- MODEL 2: QUANT ENGINE ---
-            logger.info("2. Quant Engine: Analyzing Structure...")
-            # Fetch OHLCV (Sync for now, can be async)
-            # Note: In async route, we should await if method is async. fetch_ohlcv is async in definition but we need to run it.
-            # Since we are in an async def, we can await.
-            df = await quant_service.fetch_ohlcv("XAU/USD")
-            quant_analysis = quant_service.analyze_market_structure(df)
-            logger.info(f"   Quant: {quant_analysis.get('trend')} | Volatility Alert: {quant_analysis.get('volatility_alert')}")
+            # --- MODEL 2: QUANT ENGINE (Multi-Timeframe) ---
+            logger.info("2. Quant Engine: Analyzing Market Structure (D1, H4, H1)...")
+            quant_context = await quant_service.get_multi_timeframe_analysis("XAU/USD")
+            
+            # Fallback for logging if empty
+            alignment = quant_context.get("alignment", "Unavailable")
+            trend_1h = quant_context.get("1h", {}).get("trend", "Neutral")
+            logger.info(f"   Quant Alignment: {alignment} | 1H Trend: {trend_1h}")
 
             # --- MODEL 3: VISION ENGINE (SMC) ---
             logger.info("3. Vision Engine: Analyzing Chart with Context...")
@@ -640,7 +644,7 @@ async def analyze_chart(
             ai_result_json = ai_service.analyze_chart(
                 file_location, 
                 equity=equity,
-                quant_data=quant_analysis,
+                quant_data=quant_context,
                 sentiment_data=market_sentiment
             )
             
@@ -650,7 +654,7 @@ async def analyze_chart(
             ai_data = json.loads(ai_result_json)
             
             # Inject Quantitative & Sentiment Data into Final Response for Frontend
-            ai_data["quant_engine"] = quant_analysis
+            ai_data["quant_engine"] = quant_context
             ai_data["sentiment_engine"] = market_sentiment
             
             # Map AI result to DB model
@@ -669,6 +673,7 @@ async def analyze_chart(
                 "bias": ai_data.get("bias", "Neutral"),
                 "confidence": ai_data.get("confidence", 50),
                 "summary": ai_data.get("summary", "Analysis failed."),
+                "recommendation": ai_data.get("recommendation", "WAIT"),
                 "entry": to_float(levels.get("entry")),
                 "sl": to_float(levels.get("sl")),
                 "tp1": to_float(levels.get("tp1")),
