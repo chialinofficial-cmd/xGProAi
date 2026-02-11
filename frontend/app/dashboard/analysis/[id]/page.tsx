@@ -146,6 +146,7 @@ export default function AnalysisPage() {
         : '';
 
     const isBullish = analysis.bias.toLowerCase() === 'bullish';
+    const isBearish = analysis.bias.toLowerCase() === 'bearish';
     // Use gold/red for styling instead of green/red to match premium theme where possible, 
     // or standard trading colors if preferred. Let's stick to Green/Red for signals but use Gold for UI accents.
     const signalColor = isBullish ? 'text-green-500' : 'text-red-500';
