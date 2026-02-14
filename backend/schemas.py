@@ -65,6 +65,8 @@ class AnalysisResponse(BaseModel):
     image_path: str
     result: str | None = None # win, loss, breakeven
     meta_data: dict | None = None
+    quant_engine: dict | None = None
+    sentiment_engine: dict | None = None
     created_at: datetime
     
     class Config:

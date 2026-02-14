@@ -258,7 +258,13 @@ async def analyze_chart(
         db.add(db_analysis)
         db.commit()
         db.refresh(db_analysis)
-        return db_analysis
+        
+        # Map to Response Schema manually to include hydrated fields
+        response = AnalysisResponse.from_orm(db_analysis)
+        response.quant_engine = quant_context
+        response.sentiment_engine = market_sentiment
+        
+        return response
     except Exception as e:
          logger.error(f"Database Save Failed: {e}")
          raise HTTPException(status_code=500, detail=f"Failed to save results: {str(e)}")

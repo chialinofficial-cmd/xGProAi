@@ -12,23 +12,7 @@ from schemas import CreditUpdate, TierUpdate, TrialExtension
 # Setup Logger
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/admin",
-    tags=["Admin"],
-    dependencies=[Depends(verify_admin)] # Protect all routes
-)
-
-# Note: verify_admin is already a dependency for the whole router, 
-# but existing code had it on each endpoint. 
-# We can keep it on the router level for cleaner code, EXCEPT for "promote" 
-# which might be a public backdoor (checked main.py: promote used Depends(get_db) but verify_admin? No, it used a secret key).
-# So "promote" should NOT be under this router if the router has a global dependency.
-# Actually, looking at main.py, "promote" does NOT uses verify_admin. It uses a secret string.
-# So I should move "promote" to `admin.py` but EXCLUDE it from the router dependency, 
-# OR just not put the dependency on the router and add it to each endpoint.
-# Adding it to each endpoint is safer for migration to match exact behavior.
-
-router = APIRouter(tags=["Admin"]) # Reset router without global dependency
+router = APIRouter(tags=["Admin"])
 
 @router.post("/admin/promote")
 def promote_to_admin(email: str, secret: str, uid: str = None, db: Session = Depends(get_db)):
