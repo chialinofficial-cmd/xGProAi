@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON
 from database import Base
 import datetime
 
@@ -21,6 +21,7 @@ class Analysis(Base):
     sentiment = Column(String, nullable=True)
     user_id = Column(String, index=True) # Firebase UID
     processing_time_ms = Column(Integer, nullable=True) # AI Latency
+    meta_data = Column(JSON, nullable=True) # JSON field for Quant Indicators
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
 
 class User(Base):

@@ -317,10 +317,15 @@ class AIService:
                 
                 quant_str = (
                     f"**MULTI-TIMEFRAME ALIGNMENT:** {alignment}\n"
-                    f"        *   **Daily (D1):** {trends.get('1d')} (RSI: {d1_data.get('rsi', 50):.1f})\n"
+                    f"        *   **Daily (D1):** {trends.get('1d')} (Pivots: {d1_data.get('pivots', {}).get('pivot', 'N/A'):.2f} / R1: {d1_data.get('pivots', {}).get('r1', 'N/A'):.2f})\n"
                     f"        *   **4-Hour (H4):** {trends.get('4h')} (Structure)\n"
                     f"        *   **1-Hour (H1):** {trends.get('1h')} (Execution)\n"
-                    f"        *   **Volatility:** {'HIGH' if h1_data.get('volatility_alert') else 'Normal'}"
+                    f"        *   **Volatility:** {'HIGH' if h1_data.get('volatility_alert') else 'Normal'}\n"
+                    f"        *   **TECHNICALS (H1):**\n"
+                    f"            - RSI: {h1_data.get('indicators', {}).get('rsi', 50):.1f} ({h1_data.get('momentum', 'Neutral')})\n"
+                    f"            - MACD: {h1_data.get('indicators', {}).get('macd', {}).get('sentiment', 'Neutral')}\n"
+                    f"            - Bollinger Bands: {h1_data.get('indicators', {}).get('bollinger', {}).get('position', 'Inside')}\n"
+                    f"            - Pivot Point: {h1_data.get('pivots', {}).get('pivot', 'N/A'):.2f}\n"
                 )
             else:
                 # Legacy Fallback

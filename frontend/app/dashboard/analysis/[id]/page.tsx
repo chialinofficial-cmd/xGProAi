@@ -624,52 +624,110 @@ via xGProAi
                         )}
 
                         {/* 2. TECHNICAL TAB */}
+                        {/* 2. TECHNICAL TAB */}
                         {activeTab === 'technical' && (
-                            <div className="p-6 h-full animate-fade-in">
-                                <h3 className="text-xl font-bold text-white mb-6">Technical Levels</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center p-4 bg-black/30 rounded-lg border border-white/5 hover:border-gold/30 transition-colors">
-                                        <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mr-4 text-red-500">
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-400 text-xs uppercase">Major Resistance</p>
-                                            <p className="text-xl font-bold text-white font-mono">{(currentPrice * 1.015).toFixed(3)}</p>
-                                        </div>
-                                    </div>
+                            <div className="p-6 h-full animate-fade-in overflow-y-auto">
+                                <h3 className="text-xl font-bold text-white mb-6">Technical Levels (H1)</h3>
 
-                                    <div className="flex items-center p-4 bg-black/30 rounded-lg border border-white/5 hover:border-gold/30 transition-colors">
-                                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mr-4 text-blue-500">
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" /></svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-400 text-xs uppercase">Pivot Zone</p>
-                                            <p className="text-xl font-bold text-white font-mono">{currentPrice.toFixed(3)}</p>
-                                        </div>
-                                    </div>
+                                {/* Advanced Indicators Grid */}
+                                {analysis.quant_engine && (analysis.quant_engine as any)['1h'] ? (
+                                    <div className="space-y-6">
+                                        {(() => {
+                                            const h1 = (analysis.quant_engine as any)['1h'];
+                                            const indicators = h1.indicators || {};
+                                            const pivots = h1.pivots || {};
+                                            const macd = indicators.macd || {};
+                                            const bb = indicators.bollinger || {};
 
-                                    <div className="flex items-center p-4 bg-black/30 rounded-lg border border-white/5 hover:border-gold/30 transition-colors">
-                                        <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mr-4 text-green-500">
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-400 text-xs uppercase">Key Support</p>
-                                            <p className="text-xl font-bold text-white font-mono">{(currentPrice * 0.985).toFixed(3)}</p>
-                                        </div>
-                                    </div>
-                                </div>
+                                            return (
+                                                <>
+                                                    {/* Key Levels */}
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center p-4 bg-black/30 rounded-lg border border-white/5 hover:border-gold/30 transition-colors">
+                                                            <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mr-4 text-red-500">
+                                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-gray-400 text-xs uppercase">R1 Resistance</p>
+                                                                <p className="text-xl font-bold text-white font-mono">{pivots.r1 ? pivots.r1.toFixed(2) : (currentPrice * 1.015).toFixed(2)}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-gray-500 text-[10px] uppercase">R2: {pivots.r2 ? pivots.r2.toFixed(2) : '-'}</p>
+                                                            </div>
+                                                        </div>
 
-                                <div className="mt-8">
-                                    <h4 className="text-gray-400 text-sm font-bold uppercase mb-4">Sentiment Analysis</h4>
-                                    <div className="flex gap-2">
-                                        <span className={`px-3 py-1 bg-black border border-${isBullish ? 'green' : 'red'}-500/30 text-${isBullish ? 'green' : 'red'}-400 rounded-full text-xs`}>
-                                            Structure: {isBullish ? 'Higher Highs' : 'Lower Lows'}
-                                        </span>
-                                        <span className="px-3 py-1 bg-black border border-gray-700 text-gray-400 rounded-full text-xs">
-                                            Volume: Increasing
-                                        </span>
+                                                        <div className="flex items-center p-4 bg-black/30 rounded-lg border border-white/5 hover:border-gold/30 transition-colors">
+                                                            <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mr-4 text-blue-500">
+                                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" /></svg>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-gray-400 text-xs uppercase">Pivot Point</p>
+                                                                <p className="text-xl font-bold text-white font-mono">{pivots.pivot ? pivots.pivot.toFixed(2) : currentPrice.toFixed(2)}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center p-4 bg-black/30 rounded-lg border border-white/5 hover:border-gold/30 transition-colors">
+                                                            <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mr-4 text-green-500">
+                                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-gray-400 text-xs uppercase">S1 Support</p>
+                                                                <p className="text-xl font-bold text-white font-mono">{pivots.s1 ? pivots.s1.toFixed(2) : (currentPrice * 0.985).toFixed(2)}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-gray-500 text-[10px] uppercase">S2: {pivots.s2 ? pivots.s2.toFixed(2) : '-'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Advanced Indicators */}
+                                                    <div className="mt-8 grid grid-cols-2 gap-4">
+                                                        <div className="bg-black/20 p-4 rounded-lg border border-white/5">
+                                                            <p className="text-gray-400 text-xs uppercase mb-1">RSI (14)</p>
+                                                            <div className="flex items-end gap-2">
+                                                                <span className={`text-2xl font-bold ${indicators.rsi > 70 || indicators.rsi < 30 ? 'text-yellow-400' : 'text-white'}`}>
+                                                                    {indicators.rsi ? indicators.rsi.toFixed(1) : '-'}
+                                                                </span>
+                                                                <span className="text-xs text-gray-500 mb-1">{h1.momentum}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="bg-black/20 p-4 rounded-lg border border-white/5">
+                                                            <p className="text-gray-400 text-xs uppercase mb-1">MACD</p>
+                                                            <div className="flex items-end gap-2">
+                                                                <span className={`text-xl font-bold ${macd.sentiment === 'Bullish' ? 'text-green-400' : 'text-red-400'}`}>
+                                                                    {macd.sentiment || '-'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-600 mt-1">Hist: {macd.hist ? macd.hist.toFixed(3) : '-'}</p>
+                                                        </div>
+                                                        <div className="bg-black/20 p-4 rounded-lg border border-white/5 col-span-2">
+                                                            <p className="text-gray-400 text-xs uppercase mb-1">Bollinger Bands (20, 2)</p>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-white font-bold">{bb.position || 'Inside'}</span>
+                                                                <div className="text-right">
+                                                                    <p className="text-[10px] text-gray-500">Upper: {bb.upper ? bb.upper.toFixed(2) : '-'}</p>
+                                                                    <p className="text-[10px] text-gray-500">Lower: {bb.lower ? bb.lower.toFixed(2) : '-'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="text-center py-10">
+                                        <p className="text-gray-500">Advanced indicators available for new analyses.</p>
+                                        <div className="mt-4 opacity-50 pointer-events-none filter blur-sm select-none">
+                                            {/* Fake Placeholder to show what it would look like */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center p-4 bg-black/30 rounded-lg border border-white/5">
+                                                    <div className="flex-1"><p className="text-gray-400 text-xs uppercase">Pivot Point</p><p className="text-xl font-bold text-white font-mono">2045.50</p></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
