@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 // import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
-import { UserDetailsModal } from '../../components/admin/UserDetailsModal';
+import { UserDetailsModal } from '../../../components/admin/UserDetailsModal';
 
 export default function UserManagement() {
     // const { user } = useAuth();
