@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 // import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
+import { UserDetailsModal } from '../../components/admin/UserDetailsModal';
 
 export default function UserManagement() {
     // const { user } = useAuth();
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedUser, setSelectedUser] = useState<any>(null);
 
     useEffect(() => {
         fetchUsers();
@@ -39,34 +41,8 @@ export default function UserManagement() {
         }
     };
 
-    const handleGrantCredits = async (userId: number, currentCredits: number) => {
-        const amount = prompt("Enter new credit balance:", currentCredits.toString());
-        if (!amount) return;
-
-        const token = localStorage.getItem('admin_token');
-        if (!token) return;
-
-        try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${apiUrl}/admin/users/${userId}/credits`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ amount: parseInt(amount) })
-            });
-
-            if (res.ok) {
-                alert("Credits updated!");
-                fetchUsers(); // Refresh
-            } else {
-                alert("Failed to update credits.");
-            }
-        } catch (error) {
-            alert("Error updating credits.");
-        }
-    };
+    // Old handleGrantCredits removed in favor of Modal
+    // const handleGrantCredits = async ...
 
     return (
         <div className="space-y-6 animate-fade-in pb-12">
@@ -116,12 +92,11 @@ export default function UserManagement() {
                                     <td className="p-4 text-gray-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                                     <td className="p-4 text-right">
                                         <button
-                                            onClick={() => handleGrantCredits(u.id, u.credits_balance)}
-                                            className="text-gold hover:text-white text-xs font-bold mr-2"
+                                            onClick={() => setSelectedUser(u)}
+                                            className="px-3 py-1 bg-[#222] hover:bg-gold hover:text-black border border-[#444] rounded text-xs font-bold transition-all"
                                         >
-                                            Edit Credits
+                                            Manage
                                         </button>
-                                        {/* Future: View Details */}
                                     </td>
                                 </tr>
                             ))}
@@ -129,6 +104,17 @@ export default function UserManagement() {
                     </table>
                 </div>
             </div>
+            {/* Modal */}
+            {selectedUser && (
+                <UserDetailsModal
+                    user={selectedUser}
+                    onClose={() => setSelectedUser(null)}
+                    onUpdate={() => {
+                        fetchUsers(); // Refresh list
+                        setSelectedUser(null); // Close modal
+                    }}
+                />
+            )}
         </div>
     );
 }
