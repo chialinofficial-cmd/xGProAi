@@ -260,7 +260,7 @@ async def analyze_chart(
         db.refresh(db_analysis)
         
         # Map to Response Schema manually to include hydrated fields
-        response = AnalysisResponse.from_orm(db_analysis)
+        response = AnalysisResponse.model_validate(db_analysis)
         response.quant_engine = quant_context
         response.sentiment_engine = market_sentiment
         
@@ -295,7 +295,7 @@ def read_analysis(analysis_id: int, db: Session = Depends(get_db), current_user:
         raise HTTPException(status_code=403, detail="Not authorized to view this analysis")
 
     # Map meta_data to response fields
-    response = AnalysisResponse.from_orm(analysis)
+    response = AnalysisResponse.model_validate(analysis)
     if analysis.meta_data:
         response.quant_engine = analysis.meta_data.get("quant")
         response.sentiment_engine = analysis.meta_data.get("sentiment")

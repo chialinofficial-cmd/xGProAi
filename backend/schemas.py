@@ -13,7 +13,7 @@ class UserResponse(BaseModel):
     full_name: str
     created_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class Token(BaseModel):
     access_token: str
@@ -70,7 +70,7 @@ class AnalysisResponse(BaseModel):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AnalysisUpdateResult(BaseModel):
     result: str # win, loss, breakeven
