@@ -65,7 +65,7 @@ export default function Home() {
           <div className="flex gap-4 items-center">
             <Link
               href={user ? "/dashboard" : "/signup"}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)]"
+              className="bg-gold hover:bg-gold-light text-black px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_20px_rgba(212,175,55,0.5)]"
             >
               Start Analysis
             </Link>
@@ -148,13 +148,13 @@ export default function Home() {
           {/* Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-20">
             {[
-              { label: "Countries Supported", val: "171+", color: "text-blue-400", border: "border-blue-500/30" },
-              { label: "Active Gold Traders", val: "80K+", color: "text-pink-400", border: "border-pink-500/30" },
-              { label: "Gold Charts Analyzed", val: "4M+", color: "text-yellow-400", border: "border-yellow-500/30" },
-              { label: "Avg Win Rate **", val: "56%", color: "text-green-400", border: "border-green-500/30" },
-              { label: "Avg Risk / Reward **", val: "1 : 1.68", color: "text-purple-400", border: "border-purple-500/30" },
+              { label: "Countries Supported", val: "171+", color: "text-white", border: "border-white/10" },
+              { label: "Active Gold Traders", val: "80K+", color: "text-gold", border: "border-gold/20" },
+              { label: "Gold Charts Analyzed", val: "4M+", color: "text-white", border: "border-white/10" },
+              { label: "Avg Win Rate **", val: "56%", color: "text-gold", border: "border-gold/20" },
+              { label: "Avg Risk / Reward **", val: "1 : 1.68", color: "text-white", border: "border-white/10" },
             ].map((stat, i) => (
-              <div key={i} className={`p-6 rounded-xl bg-surface-card border ${stat.border} flex flex-col items-center justify-center text-center`}>
+              <div key={i} className={`p-6 rounded-xl bg-surface-card border ${stat.border} flex flex-col items-center justify-center text-center hover:border-gold/40 transition-colors`}>
                 <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">{stat.label}</p>
                 <h4 className={`text-2xl font-bold ${stat.color}`}>{stat.val}</h4>
               </div>
@@ -218,7 +218,7 @@ export default function Home() {
                 title: "Gold-Specific AI",
                 desc: "Unlike generic models, our AI understands Gold's unique volatility and manipulation patterns.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                   </svg>
                 )
@@ -227,7 +227,7 @@ export default function Home() {
                 title: "Universal Chart Upload",
                 desc: "Upload candlestick charts from TradingView, MetaTrader, or any other platform.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
                 )
@@ -236,7 +236,7 @@ export default function Home() {
                 title: "Instant Analysis",
                 desc: "Get immediate insights on trend direction, momentum, and key price levels.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 )
@@ -245,7 +245,7 @@ export default function Home() {
                 title: "Support & Resistance",
                 desc: "Identify critical supply and demand zones with institutional precision.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                   </svg>
                 )
@@ -254,7 +254,7 @@ export default function Home() {
                 title: "Liquidity Analysis",
                 desc: "Spot 'Wicks' and liquidity grabs where retail traders often get stopped out.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 )
@@ -263,7 +263,7 @@ export default function Home() {
                 title: "Any Timeframe",
                 desc: "Analyze charts from any timeframe - from 1-minute scalping to weekly swings.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 )
@@ -272,7 +272,7 @@ export default function Home() {
                 title: "Macro Context",
                 desc: "Our Pro models checks DXY & Yields correlation to validate Gold moves.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 )
@@ -281,7 +281,7 @@ export default function Home() {
                 title: "Trade Insights",
                 desc: "Receive clear bias (Bullish/Bearish) and invalidation levels.",
                 icon: (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
                 )
@@ -400,13 +400,13 @@ export default function Home() {
             </div>
 
             {/* Tier 2: Active Traders (Popular) */}
-            <div className="relative p-8 rounded-2xl bg-surface-card border-2 border-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.15)] flex flex-col transform md:-translate-y-4 z-10">
-              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+            <div className="relative p-8 rounded-2xl bg-surface-card border-2 border-gold shadow-[0_0_30px_rgba(212,175,55,0.15)] flex flex-col transform md:-translate-y-4 z-10">
+              <div className="absolute top-0 right-0 bg-gold text-black text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
                 Most Popular
               </div>
 
               <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                Active Traders <span className="text-yellow-400">★</span>
+                Active Traders <span className="text-gold">★</span>
               </h3>
               <p className="text-sm text-gray-400 mb-6">Best for consistent daily usage</p>
 
@@ -416,14 +416,14 @@ export default function Home() {
               </div>
 
               <ul className="space-y-4 text-left flex-grow mb-8 text-gray-300 text-sm">
-                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> AI analysis (full output)</li>
-                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Up to 20 uploads/day</li>
-                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 30-day access</li>
+                <li className="flex items-center gap-2"><span className="text-gold">✓</span> AI analysis (full output)</li>
+                <li className="flex items-center gap-2"><span className="text-gold">✓</span> Up to 20 uploads/day</li>
+                <li className="flex items-center gap-2"><span className="text-gold">✓</span> 30-day access</li>
               </ul>
 
               <button
                 onClick={() => handlePayment(150, 'active')}
-                className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-lg shadow-blue-900/20"
+                className="w-full py-3 rounded-lg bg-gold hover:bg-gold-light text-black font-bold transition-all shadow-lg shadow-gold/20"
               >
                 Subscribe Now →
               </button>
@@ -479,42 +479,42 @@ export default function Home() {
                 title: "Retail Traders",
                 desc: "Individual traders looking to improve their chart analysis skills and make better trading decisions.",
                 icon: (
-                  <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 )
               },
               {
                 title: "Technical Analysts",
                 desc: "Professional analysts who need quick, accurate chart analysis for Gold and DXY correlations.",
                 icon: (
-                  <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                 )
               },
               {
                 title: "Fund Managers",
                 desc: "Portfolio managers seek data-driven insights for investment decisions.",
                 icon: (
-                  <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 )
               },
               {
                 title: "Prop Traders",
                 desc: "Needs a 'second opinion' to avoid blowing funded accounts during high volatility.",
                 icon: (
-                  <svg className="w-6 h-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 )
               },
               {
                 title: "Institutions",
                 desc: "Banks, hedge funds, and financial institutions requiring scalable chart analysis solutions.",
                 icon: (
-                  <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                 )
               },
               {
                 title: "Trading Teams",
                 desc: "Collaborative trading groups and signal providers looking for consistent analysis methodology.",
                 icon: (
-                  <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                  <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 )
               }
             ].map((item, i) => (
@@ -535,7 +535,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-white mb-4">Ready to Transform Your Trading?</h2>
               <p className="text-gray-400 mb-8">Join thousands of traders who trust xGProAi for accurate, AI-powered chart analysis.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-lg shadow-blue-900/20">
+                <button className="bg-gold hover:bg-gold-light text-black px-8 py-3 rounded-lg font-bold transition-all shadow-lg shadow-gold/20">
                   Start Free Trial
                 </button>
                 <button className="bg-surface-card hover:bg-background border border-border-subtle text-white px-8 py-3 rounded-lg font-medium transition-all">
@@ -631,14 +631,14 @@ export default function Home() {
                 title: "Transparency",
                 desc: "We never claim to predict the future. We provide probabilities, not certainties. We are transparent about the risks of trading and the limitations of AI.",
                 icon: (
-                  <svg className="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                 )
               },
               {
                 title: "Empowerment",
                 desc: "The days of drawing manual trendlines and guessing are over. We empower smart traders to upgrade their workflow with institutional speed.",
                 icon: (
-                  <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  <svg className="w-8 h-8 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 )
               }
             ].map((val, i) => (
@@ -703,7 +703,7 @@ export default function Home() {
                   placeholder="How can we help you?"
                 />
               </div>
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-blue-900/20">
+              <button className="w-full bg-gold hover:bg-gold-light text-black font-bold py-3 rounded-lg transition-colors shadow-lg shadow-gold/20">
                 Send Message
               </button>
             </form>
