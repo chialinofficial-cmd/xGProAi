@@ -98,7 +98,7 @@ class AIService:
                                 },
                                 {
                                     "type": "text",
-                                    "text": f"Analyze this XAU/USD chart. Equity: ${equity}. Ensure 1:2 Risk/Reward. THINK in <analysis> first. JSON ONLY at the end."
+                                    "text": f"Analyze this XAU/USD chart. Equity: ${equity}. JSON ONLY."
                                 }
                             ],
                         }
@@ -111,17 +111,11 @@ class AIService:
                 # Robust JSON Cleaning & Repair
                 import re
                 import json
-                import ast
                 
                 # 1. Extract JSON block
                 # Regex improvements: find largest { ... } block even with nesting
-                # This assumes the JSON is the LAST major bracketed block
                 json_candidates = re.findall(r'\{[\s\S]*\}', text_response)
                 
-                # Extract Analysis Block (Chain of Thought)
-                analysis_match = re.search(r'<analysis>(.*?)</analysis>', text_response, re.DOTALL)
-                analysis_reasoning = analysis_match.group(1).strip() if analysis_match else "Reasoning not provided."
-
                 if json_candidates:
                     json_str = json_candidates[-1] # Take the last one
                 else:
@@ -132,169 +126,74 @@ class AIService:
                 
                 try:
                     data = json.loads(json_str)
-                    data['reasoning'] = analysis_reasoning
                 except json.JSONDecodeError:
+                    # Last ditch effort to fix keys/trailing commas
                     try:
-                        py_dict = ast.literal_eval(json_str)
-                        data = py_dict
-                        data['reasoning'] = analysis_reasoning
-                        json_str = json.dumps(py_dict)
-                    except (ValueError, SyntaxError):
-                         if "'" in json_str and '"' not in json_str: 
-                              json_str = json_str.replace("'", '"')
-                         json_str = re.sub(r',\s*}', '}', json_str)
-                         json_str = re.sub(r',\s*]', ']', json_str)
-                         try:
-                              data = json.loads(json_str)
-                         except:
-                              logger.warning(f"Analysis CoT captured but JSON failed. RAW RESPONSE: {text_response}")
-                              raise Exception("Failed to parse AI response: JSON structure invalid.")
+                        import ast
+                        data = ast.literal_eval(json_str)
+                    except:
+                        logger.error(f"JSON Parse Failed. Raw: {text_response}")
+                        raise Exception("Failed to parse AI response.")
 
-                # 3. Post-Processing: Hallucination Check & SMC Validation
+                # 3. Post-Processing & Mapping to Legacy Schema
                 try:
-                    # Ensure all new fields exist to prevent frontend crash
-                    for key in ["structure", "market_context", "risk_management", "technique_confluence", "metrics", "scenarios"]:
-                         if key not in data: data[key] = {}
+                    # Extract floats from strings like "2650.50 - 2652.80" or "TP1: 2661.40"
+                    def extract_price(text):
+                        if isinstance(text, (int, float)):
+                            return float(text)
+                        if not text:
+                            return None
+                        # Convert to string and find first float pattern
+                        text = str(text).replace(",", "")
+                        match = re.search(r'\d+\.\d+|\d+', text)
+                        return float(match.group()) if match else None
+
+                    key_zones = data.get("key_zones", {})
                     
-                    y_labels = data.get("y_axis_labels", [])
-                    levels = data.get("levels", {})
-                    entry = levels.get("entry")
+                    entry_val = extract_price(key_zones.get("entry_zone"))
+                    sl_val = extract_price(key_zones.get("stop_loss"))
                     
-                    # Convert strings to floats for math
-                    valid_labels = []
-                    for lbl in y_labels:
-                        try:
-                            valid_labels.append(float(str(lbl).replace(",", "")))
-                        except:
-                            pass
-                            
-                    if valid_labels and entry:
-                        avg_label = sum(valid_labels) / len(valid_labels)
-                        
-                        try:
-                            entry_float = float(str(entry).replace(",", ""))
-                            
-                            # HALLUCINATION CHECK: > 1000 points deviation
-                            if abs(entry_float - avg_label) > 1000:
-                                logger.warning(f"HALLUCINATION DETECTED: Entry {entry_float} vs AvgLabel {avg_label}")
-                                
-                                # FIX: Re-center around visual labels
-                                new_entry = avg_label
-                                data["levels"]["entry"] = round(new_entry, 2)
-                                data["summary"] += " [System: Prices corrected to match Chart Y-Axis.]"
-                                # Note: Actual levels will be fixed by the Universal Logic Enforcement below
-                                entry_price = round(new_entry, 2)
-                            else:
-                                entry_price = entry_float
+                    tps = key_zones.get("take_profits", [])
+                    tp1_val = None
+                    tp2_val = None
+                    
+                    if isinstance(tps, list) and len(tps) > 0:
+                        tp1_val = extract_price(tps[0])
+                        if len(tps) > 1:
+                            tp2_val = extract_price(tps[1])
+                    
+                    # Store institutional data in meta_data
+                    # Map to legacy fields for frontend compatibility
+                    legacy_data = {
+                        "bias": data.get("bias", "Neutral"),
+                        "confidence": data.get("confidence", 50),
+                        "recommendation": data.get("recommended_action", "WAIT"),
+                        "summary": data.get("full_reasoning", "Analysis available in metadata."),
+                        "levels": {
+                            "entry": entry_val,
+                            "sl": sl_val,
+                            "tp1": tp1_val,
+                            "tp2": tp2_val
+                        },
+                        "metrics": {
+                            "risk_reward": data.get("rr_ratio", "N/A"),
+                            "sentiment": data.get("bias", "Neutral") # Fallback
+                        },
+                        # New fields for detailed view
+                        "market_structure": data.get("market_structure_summary"),
+                        "liquidity": data.get("liquidity_analysis"), 
+                        "invalidation": key_zones.get("invalidated_if")
+                    }
+                    
+                    # Serialize back to JSON for return
+                    return json.dumps(legacy_data)
 
-                            # 4. UNIVERSAL LOGIC ENFORCEMENT & 1:2 R:R FORCE
-                            bias = data.get("bias", "Neutral")
-                            levels = data.get("levels", {})
-                            
-                            # Get SL (Trust AI's structural read unless huge error)
-                            sl_price = float(str(levels.get("sl", 0) or 0).replace(",", ""))
-                            
-                            is_bullish = "Bullish" in bias
-                            is_bearish = "Bearish" in bias
-                            
-                            valid_trade = False
-                            
-                            if is_bullish and entry_price > sl_price:
-                                risk = entry_price - sl_price
-                                valid_trade = True
-                                # FORCE 1:2 RR
-                                tp_price = entry_price + (risk * 2)
-                                levels["tp1"] = round(tp_price, 2)
-                                levels["tp2"] = round(entry_price + (risk * 3), 2)
-                                levels["entry"] = entry_price
-                                levels["sl"] = sl_price
-                                
-                            elif is_bearish and entry_price < sl_price:
-                                risk = sl_price - entry_price
-                                valid_trade = True
-                                # FORCE 1:2 RR
-                                tp_price = entry_price - (risk * 2)
-                                levels["tp1"] = round(tp_price, 2)
-                                levels["tp2"] = round(entry_price - (risk * 3), 2)
-                                levels["entry"] = entry_price
-                                levels["sl"] = sl_price
-                            
-                            # If invalid logic (e.g. Bullish but SL > Entry), reset to default 1:2
-                            if not valid_trade and (is_bullish or is_bearish):
-                                logger.warning(f"Invalid Logic Detected ({bias}, Entry: {entry_price}, SL: {sl_price}). Resetting to default 60pip SL.")
-                                sl_pips = 6.0 # 60 pips gold standard
-                                if is_bullish:
-                                    levels["entry"] = entry_price
-                                    levels["sl"] = round(entry_price - sl_pips, 2)
-                                    levels["tp1"] = round(entry_price + (sl_pips * 2), 2)
-                                    levels["tp2"] = round(entry_price + (sl_pips * 3), 2)
-                                else:
-                                    levels["entry"] = entry_price
-                                    levels["sl"] = round(entry_price + sl_pips, 2)
-                                    levels["tp1"] = round(entry_price - (sl_pips * 2), 2)
-                                    levels["tp2"] = round(entry_price - (sl_pips * 3), 2)
-                            
-                            # Update Metrics
-                            if is_bullish or is_bearish:
-                                data["metrics"]["risk_reward"] = "1:2 (Fixed)"
-                            
-                            data["levels"] = levels
-                            
-                            # Re-dump to string
-                            json_str = json.dumps(data)
-                            
-                        except Exception as logic_err:
-                            logger.error(f"Logic enforcement error: {logic_err}")
+                except Exception as map_err:
+                    logger.error(f"Schema Mapping Failed: {map_err}")
+                    # Return raw data if mapping fails, hoping for the best? 
+                    # Or proper fallback.
+                    return json.dumps(data)
 
-                        except Exception as e:
-                            logger.error(f"Error during hallucination fix: {e}")
-
-                    # 4. UNIVERSAL LOGIC VALIDATION (Sanity Check)
-                    # This runs regardless of hallucination check to catch minor logic errors
-                    try:
-                        bias = data.get("bias", "Neutral")
-                        levels = data.get("levels", {})
-                        entry = niveles_float = float(str(levels.get("entry", 0)).replace(",", ""))
-                        sl = float(str(levels.get("sl", 0)).replace(",", ""))
-                        tp1 = float(str(levels.get("tp1", 0)).replace(",", ""))
-                        
-                        is_bullish = "Bullish" in bias
-                        is_bearish = "Bearish" in bias
-                        
-                        points_sl = 6.0 # Default fallback
-                        points_tp = 12.0
-
-                        if is_bullish:
-                            # Rule: SL < Entry < TP
-                            if sl >= entry:
-                                logger.warning(f"Logic Fix (Bullish): SL {sl} >= Entry {entry}. Resetting SL.")
-                                levels["sl"] = round(entry - points_sl, 2)
-                            if tp1 <= entry:
-                                logger.warning(f"Logic Fix (Bullish): TP {tp1} <= Entry {entry}. Resetting TP.")
-                                levels["tp1"] = round(entry + points_tp, 2)
-                                levels["tp2"] = round(entry + (points_tp * 1.5), 2)
-
-                        elif is_bearish:
-                            # Rule: TP < Entry < SL
-                            if sl <= entry:
-                                logger.warning(f"Logic Fix (Bearish): SL {sl} <= Entry {entry}. Resetting SL.")
-                                levels["sl"] = round(entry + points_sl, 2)
-                            if tp1 >= entry:
-                                logger.warning(f"Logic Fix (Bearish): TP {tp1} >= Entry {entry}. Resetting TP.")
-                                levels["tp1"] = round(entry - points_tp, 2)
-                                levels["tp2"] = round(entry - (points_tp * 1.5), 2)
-                        
-                        data["levels"] = levels
-                        json_str = json.dumps(data)
-                        
-                    except Exception as logic_err:
-                        logger.error(f"Logic validation error: {logic_err}")
-                            
-                except Exception as parse_err:
-                    logger.warning(f"Post-processing warning: {parse_err}")
-
-                return json_str
-            
             except Exception as e:
                 logger.error(f"Model {model} failed: {e}")
                 errors.append(f"{model}: {str(e)}")
@@ -306,114 +205,78 @@ class AIService:
         # Format Context Strings
         quant_str = "Unavailable"
         if quant_data:
-            # Handle standard single-timeframe data or new multi-timeframe context
             if "trends" in quant_data:
-                # Multi-Timeframe
                 trends = quant_data.get("trends", {})
-                alignment = quant_data.get("alignment", "Mixed")
                 d1_data = quant_data.get("1d", {})
-                h4_data = quant_data.get("4h", {})
                 h1_data = quant_data.get("1h", {})
                 
                 quant_str = (
-                    f"**MULTI-TIMEFRAME ALIGNMENT:** {alignment}\n"
-                    f"        *   **Daily (D1):** {trends.get('1d')} (Pivots: {d1_data.get('pivots', {}).get('pivot', 'N/A'):.2f} / R1: {d1_data.get('pivots', {}).get('r1', 'N/A'):.2f})\n"
-                    f"        *   **4-Hour (H4):** {trends.get('4h')} (Structure)\n"
-                    f"        *   **1-Hour (H1):** {trends.get('1h')} (Execution)\n"
-                    f"        *   **Volatility:** {'HIGH' if h1_data.get('volatility_alert') else 'Normal'}\n"
-                    f"        *   **TECHNICALS (H1):**\n"
-                    f"            - RSI: {h1_data.get('indicators', {}).get('rsi', 50):.1f} ({h1_data.get('momentum', 'Neutral')})\n"
-                    f"            - MACD: {h1_data.get('indicators', {}).get('macd', {}).get('sentiment', 'Neutral')}\n"
-                    f"            - Bollinger Bands: {h1_data.get('indicators', {}).get('bollinger', {}).get('position', 'Inside')}\n"
-                    f"            - Pivot Point: {h1_data.get('pivots', {}).get('pivot', 'N/A'):.2f}\n"
+                    f"Quant Trends -> D1: {trends.get('1d')}, H4: {trends.get('4h')}, H1: {trends.get('1h')}. "
+                    f"Volatility: {'High' if h1_data.get('volatility_alert') else 'Normal'}. "
+                    f"RSI: {h1_data.get('indicators', {}).get('rsi', 50):.1f}."
                 )
             else:
-                # Legacy Fallback
-                quant_str = f"Trend: {quant_data.get('trend')}, RSI: {quant_data.get('rsi')}, Volatility Alert: {quant_data.get('volatility_alert')}"
+                quant_str = f"Trend: {quant_data.get('trend')}, RSI: {quant_data.get('rsi')}"
             
         sentiment_str = "Unavailable"
         if sentiment_data:
-            sentiment_str = f"Score: {sentiment_data.get('score')}, Label: {sentiment_data.get('label')}, Summary: {sentiment_data.get('summary')}"
+            sentiment_str = f"Label: {sentiment_data.get('label')} ({sentiment_data.get('score')})"
 
-        return f"""
-        You are xGProAi, the world's leading **Institutional Quantitative & SMC Technical Analyst**.
-        
-        CURRENT ACCOUNT EQUITY: ${equity}
-        RISK PER TRADE: 1.0% (${equity * 0.01})
-        
-        **LIVE MARKET CONTEXT (TRI-MODEL INPUTS):**
-        *   **QUANT ENGINE:** 
-            {quant_str}
-        *   **SENTIMENT ENGINE:** {sentiment_str}
-        
-        **CORE PHILOSOPHY: Smart Money Concepts (SMC) & Top-Down Analysis**
-        Retail traders look for patterns. You look for **Liquidity, Inefficiency, and Order Flow** aligned with Higher Timeframe (HTF) Structure.
-        
-        **CRITICAL ANALYSIS RULES (TOP-DOWN):**
-        1.  **DAILY/4H BIAS (The Narrative):** Use the Quant Engine inputs above. If Daily is Bullish, avoid shorting into support.
-        2.  **MARKET STRUCTURE (BOSS):** Identify Break of Structure (BOS) and Change of Character (CHoCH/MSS).
-        3.  **LIQUIDITY (The Fuel):**
-            *   **BSL (Buy Side Liquidity):** Equal Highs or Trendline Liquidity above price.
-            *   **SSL (Sell Side Liquidity):** Equal Lows or Trendline Liquidity below price.
-            *   **Sweep:** Has price recently "swept" a liquidity pool? (Wick grab).
-        4.  **INEFFICIENCY (The Magnet):** Identify Fair Value Gaps (FVG) / Imbalances. Price often returns to these.
-        5.  **ORDER BLOCKS (The Defense):** Identify the institutional Order Block (OB) responsible for the move.
-        6.  **SYNTHESIS:** 
-            *   **Confluence is King:** If H1 Structure aligns with Daily Trend -> **MAX CONVICTION**.
-            *   If Sentiment is Bearish but D1 Structure is Bullish -> **Wait for deep discount**.
-        
-        **RISK MANAGEMENT (GOLD SPECIALIST):**
-        *   **Volatility Aware:** Gold XAU/USD is volatile.
-        *   **Stop Loss Placement:** BEHIND the invalidation point (e.g. Swing High/Low or OB), plus padding (30-50 pips).
-        *   **Lot Size Formula:** (Equity * 0.01) / (SL_Pips * 10).
-        
-        **OUTPUT REQUIREMENTS:**
-        Thinking Process (<analysis>):
-        1.  Identify Logic: Liquidity Sweep -> Reversal? FVG Retest -> Continuation?
-        2.  Integrate Context: How does Quant/Sentiment support or contradict the chart?
-        3.  Define Zones: Entry at OB or FVG. SL behind Structure.
-        4.  Calculate Math: Exact Pips and Lot Size.
-        
-        JSON Output Specification:
+        return f'''
+        You are the most precise institutional-grade Gold (XAUUSD) analyst in the world. 
+        You have 18+ years trading exclusively XAUUSD for prop firms and hedge funds using pure Smart Money Concepts (SMC/ICT), liquidity engineering, and order-flow. 
+        Your ONLY job is to deliver extremely high-probability, rule-based setups with ≥75% historical win rate on filtered signals. 
+        You are brutally objective, conservative, and never force trades.
+
+        CORE RULES — NEVER BREAK THEM:
+        - Asset: XAUUSD only. Ignore anything else.
+        - Framework: Strict SMC/ICT only (no lagging indicators unless clearly visible on chart).
+          • Market Structure (BOS, CHOCH, HH/HL, LH/LL)
+          • Liquidity (equal highs/lows, stop hunts, previous day/week high/low pools)
+          • Order Blocks (fresh vs mitigated bullish/bearish)
+          • Fair Value Gaps / Imbalances (3+ candle gaps)
+          • Displacement (strong impulsive candles with volume if shown)
+          • Inducement / Fakeouts
+        - Mandatory multi-timeframe analysis: Daily & 4H for bias → Current TF (identify from chart) for entry.
+        - Confluence required: Bias must align on at least 2 timeframes. No trade without it.
+        - Session timing: Always note London / NY kill zones if time is visible on chart.
+        - Macro context: {quant_str} | Sentiment: {sentiment_str} (Factor this heavily).
+        - Confidence filter: Only setups with ≥75 confidence are “High-Conviction”. Below 65 = “No high-conviction setup — wait”.
+        - Never hallucinate levels. All prices must be directly readable from the chart image.
+
+        ANALYSIS PROCESS (follow exactly in this order every time):
+        1. Identify the exact timeframe(s) and current price from the image.
+        2. Higher-timeframe bias (Daily/4H structure, trend, key liquidity).
+        3. Current timeframe market structure + recent liquidity grabs/sweeps.
+        4. Key zones: Order Blocks, FVGs, breaker blocks, equal highs/lows.
+        5. Best high-probability setup (or “No setup”).
+        6. Precise entry zone, SL, 2–3 TPs with R:R.
+        7. Confidence score with justification.
+
+        OUTPUT FORMAT — Respond EXCLUSIVELY with valid JSON (no extra text, no markdown):
+
         {{
-            "y_axis_labels": ["2040.00", "2050.00"],
-            "bias": "Bullish" | "Bearish" | "Neutral",
-            "confidence": 90,
-            "recommendation": "BUY" | "SELL" | "WAIT", 
-            "current_price": 2045.50,
-            "summary": "Price swept SSL at 2040 and rejected the H4 Order Block. Quant confirms bullish divergence...",
-            "structure": {{
-                "trend": "Bullish",
-                "phase": "Accumulation" | "Markup" | "Distribution" | "Markdown",
-                "key_event": "MSS (Market Structure Shift) Confirmed"
-            }},
-            "smc_context": {{
-                "fair_value_gap": "Bullish FVG at 2042-2044",
-                "order_block": "H4 Bullish OB at 2040",
-                "liquidity_sweep": "Swept Previous Daily Lows",
-                "market_structure_break": "BOS to upside"
-            }},
-            "levels": {{
-                "entry": 2046.00,
-                "sl": 2038.00,
-                "tp1": 2055.00,
-                "tp2": 2065.00
-            }},
-            "risk_management": {{
-                "stop_loss_pips": 80,
-                "risk_amount_usd": {equity * 0.01},
-                "recommended_lot_size": 0.12,
-                "leverage": "1:30"
-            }},
-            "scenarios": {{
-                "invalidation_price": 2037.00,
-                "bullish_thesis": "Retest of FVG holds, targeting BSL at 2060.",
-                "bearish_invalidation": "Close below 2037 negates the OB."
-            }},
-            "metrics": {{
-                "risk_reward": "1:2.5",
-                "volatility_score": 8,
-                "sentiment": "Institutional Buying"
-            }}
+          "analysis_timestamp": "YYYY-MM-DD HH:MM UTC",
+          "timeframes_analyzed": ["Daily", "4H", "Current"],
+          "bias": "Bullish | Bearish | Neutral",
+          "confidence": 82,
+          "market_structure_summary": "Detailed 2-sentence summary of HTF + LTF structure",
+          "liquidity_analysis": "Which liquidity was grabbed / is next to be taken",
+          "key_zones": {{
+            "entry_zone": "2650.50 - 2652.80 (fresh bullish OB after liquidity sweep)",
+            "stop_loss": 2647.20,
+            "take_profits": [
+              "TP1: 2661.40 (1:1.8) — next liquidity pool",
+              "TP2: 2674.00 (1:3.2) — equal highs"
+            ],
+            "invalidated_if": "price closes below 2646.80"
+          }},
+          "rr_ratio": "1:2.8",
+          "recommended_action": "High-Conviction LONG from ... | Risk 0.5-1% | SL ...",
+          "full_reasoning": "Step-by-step visible chart evidence (be extremely specific)",
+          "disclaimer": "This is educational analysis only. Not financial advice."
         }}
-        """
+
+        If the chart is unclear, low quality, or no high-conviction setup exists → set "confidence": <65 and "recommended_action": "No high-conviction setup — stand aside".
+        Temperature = 0.1, be precise and concise.
+        '''
