@@ -120,8 +120,8 @@ export default function AdminOverview() {
                 revenueData={revenueData}
             />
 
-            {/* User Management */}
-            <UserTable />
+            {/* User Management moved to separate page */}
+            {/* <UserTable /> */}
         </div>
     );
 }
