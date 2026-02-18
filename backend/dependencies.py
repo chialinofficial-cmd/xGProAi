@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 import models
 import os
-import jwt
+from jose import jwt, JWTError, ExpiredSignatureError
 
 # Database Dependency
 def get_db():
@@ -23,9 +23,9 @@ def verify_admin(x_user_id: str = Header(None), authorization: str = Header(None
             payload = jwt.decode(token, ADMIN_JWT_SECRET, algorithms=["HS256"])
             if payload.get("sub") == "admin":
                 return True
-        except jwt.ExpiredSignatureError:
+        except ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Admin Token Expired")
-        except jwt.InvalidTokenError:
+        except JWTError:
             pass # Fallthrough to User Check
             
     # 2. Fallback to User-based Admin (Legacy / User Dashboard Access)

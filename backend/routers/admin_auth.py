@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 import os
-import jwt
+from jose import jwt
 import datetime
 from datetime import timedelta
 
