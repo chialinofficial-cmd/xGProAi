@@ -19,7 +19,28 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCred = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCred.user;
+
+            // Check Admin Status
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const res = await fetch(`${apiUrl}/users/stats`, {
+                    headers: { 'X-User-ID': user.uid }
+                });
+
+                if (res.ok) {
+                    const stats = await res.json();
+                    if (stats.is_admin) {
+                        router.push('/admin');
+                        showToast('Welcome Admin', 'success');
+                        return;
+                    }
+                }
+            } catch (statsErr) {
+                console.warn("Failed to check admin status", statsErr);
+            }
+
             showToast('Welcome back!', 'success');
             router.push('/dashboard');
         } catch (err: any) {
@@ -33,7 +54,28 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         setLoading(true);
         try {
-            await signInWithPopup(auth, googleProvider);
+            const userCred = await signInWithPopup(auth, googleProvider);
+            const user = userCred.user;
+
+            // Check Admin Status
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const res = await fetch(`${apiUrl}/users/stats`, {
+                    headers: { 'X-User-ID': user.uid }
+                });
+
+                if (res.ok) {
+                    const stats = await res.json();
+                    if (stats.is_admin) {
+                        router.push('/admin');
+                        showToast('Welcome Admin', 'success');
+                        return;
+                    }
+                }
+            } catch (statsErr) {
+                console.warn("Failed to check admin status", statsErr);
+            }
+
             showToast('Welcome back!', 'success');
             router.push('/dashboard');
         } catch (err: any) {

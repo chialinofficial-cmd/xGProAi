@@ -45,7 +45,10 @@ def get_stats(
             "mobile": user.mobile if user else None,
             "country": user.country if user else None,
             "gender": user.gender if user else None,
-            "age_group": user.age_group if user else None
+            "country": user.country if user else None,
+            "gender": user.gender if user else None,
+            "age_group": user.age_group if user else None,
+            "is_admin": user.is_admin if user else False
         }
     except Exception as e:
         logger.error(f"Stats Error: {e}")

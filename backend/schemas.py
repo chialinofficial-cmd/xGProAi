@@ -47,6 +47,7 @@ class StatsResponse(BaseModel):
     country: str | None = None
     gender: str | None = None
     age_group: str | None = None
+    is_admin: bool = False
 
 # Analysis Schemas
 class AnalysisResponse(BaseModel):

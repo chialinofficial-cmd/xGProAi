@@ -15,7 +15,7 @@ export default function HistoryPage() {
         const fetchHistory = async () => {
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const res = await fetch(`${apiUrl}/analyses?limit=50`, {
+                const res = await fetch(`${apiUrl}/analyses?limit=100`, {
                     headers: { 'X-User-ID': user.uid }
                 });
 
@@ -32,6 +32,36 @@ export default function HistoryPage() {
 
         fetchHistory();
     }, [user]);
+
+    const downloadCSV = () => {
+        if (history.length === 0) return;
+
+        const headers = ["Date", "Time", "Asset", "Bias", "Confidence", "Entry", "SL", "TP1", "TP2", "Result"];
+        const rows = history.map(item => [
+            new Date(item.created_at).toLocaleDateString(),
+            new Date(item.created_at).toLocaleTimeString(),
+            item.asset,
+            item.bias,
+            item.confidence + "%",
+            item.entry || "-",
+            item.sl || "-",
+            item.tp1 || "-",
+            item.tp2 || "-",
+            item.result || "Pending"
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
+            + rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `xgpro_history_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     if (loading) {
         return (
@@ -53,8 +83,18 @@ export default function HistoryPage() {
                     <h1 className="text-3xl font-bold text-white">Analysis History</h1>
                     <p className="text-gray-400 text-sm mt-1">Review your past AI insights and their outcomes.</p>
                 </div>
-                <div className="bg-white/5 px-4 py-2 rounded-lg text-sm text-gray-300 font-mono">
-                    Total: {history.length}
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={downloadCSV}
+                        disabled={history.length === 0}
+                        className="bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Export CSV
+                    </button>
+                    <div className="bg-white/5 px-4 py-2 rounded-lg text-sm text-gray-300 font-mono">
+                        Total: {history.length}
+                    </div>
                 </div>
             </div>
 
@@ -99,8 +139,8 @@ export default function HistoryPage() {
                                         </td>
                                         <td className="p-4">
                                             <span className={`px-2 py-1 text-xs font-bold rounded uppercase ${item.bias === 'Bullish' ? 'bg-green-500/20 text-green-400' :
-                                                    item.bias === 'Bearish' ? 'bg-red-500/20 text-red-400' :
-                                                        'bg-gray-500/20 text-gray-400'
+                                                item.bias === 'Bearish' ? 'bg-red-500/20 text-red-400' :
+                                                    'bg-gray-500/20 text-gray-400'
                                                 }`}>
                                                 {item.bias}
                                             </span>
