@@ -10,6 +10,10 @@ import requests
 import os
 import io
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class QuantService:
     def __init__(self):
         self.exchange = ccxt.kraken() if ccxt else None # Public data fallback
@@ -20,7 +24,7 @@ class QuantService:
         Fetches data from Alpha Vantage API.
         """
         if not self.av_key:
-            print("Alpha Vantage Key missing.")
+            logger.warning("Alpha Vantage Key missing.")
             return pd.DataFrame()
 
         try:
@@ -65,16 +69,16 @@ class QuantService:
                 try:
                     import json
                     error_json = json.loads(content)
-                    print(f"Alpha Vantage API Message: {error_json}")
+                    logger.warning(f"Alpha Vantage API Message: {error_json}")
                 except:
-                    print(f"Alpha Vantage API returned JSON (likely error/limit): {content[:100]}")
+                    logger.error(f"Alpha Vantage API returned JSON (likely error/limit): {content[:100]}")
                 return pd.DataFrame()
 
             # Parse CSV
             try:
                 df = pd.read_csv(io.BytesIO(content))
             except Exception as e:
-                print(f"Alpha Vantage CSV Parse Failed: {e}")
+                logger.error(f"Alpha Vantage CSV Parse Failed: {e}")
                 return pd.DataFrame()
             
             if df.empty:
@@ -83,7 +87,7 @@ class QuantService:
             # Normalize Columns
             # AV CSV returns: timestamp,open,high,low,close
             df.columns = [c.lower() for c in df.columns]
-            print(f"DEBUG: AV Columns: {df.columns.tolist()}")
+            # print(f"DEBUG: AV Columns: {df.columns.tolist()}") # Commented out debug print
             
             if 'timestamp' in df.columns:
                  # Ensure datetime
@@ -98,7 +102,7 @@ class QuantService:
             return df.tail(limit)
 
         except Exception as e:
-            print(f"Alpha Vantage Error: {e}")
+            logger.error(f"Alpha Vantage Error: {e}")
             return pd.DataFrame()
 
     async def fetch_ohlcv(self, symbol="XAU/USD", timeframe="1h", limit=100):
@@ -111,7 +115,7 @@ class QuantService:
             if not df_av.empty and len(df_av) > 5:
                 return df_av
 
-            print("Alpha Vantage failed or returned empty. Falling back to yfinance...")
+            logger.info("Alpha Vantage failed or returned empty. Falling back to yfinance...")
 
             # 2. Try yfinance for Gold
             if symbol == "XAU/USD":
@@ -160,14 +164,14 @@ class QuantService:
                         
                         return df.tail(limit)
                 except Exception as e:
-                     print(f"yfinance failed: {e}. Trying fallback...")
+                     logger.error(f"yfinance failed: {e}. Trying fallback...")
 
             # 3. Fallback to Mock
-            print(f"Quant: Using mock data due to primary feed failure.")
+            logger.warning(f"Quant: Using mock data due to primary feed failure.")
             return self.generate_mock_data(limit)
             
         except Exception as e:
-            print(f"Quant Error: {e}")
+            logger.error(f"Quant Error: {e}")
             return pd.DataFrame()
 
     async def get_multi_timeframe_analysis(self, symbol="XAU/USD"):
@@ -224,7 +228,7 @@ class QuantService:
             }
             
         except Exception as e:
-            print(f"Multi-Timeframe Analysis Failed: {e}")
+            logger.error(f"Multi-Timeframe Analysis Failed: {e}")
             return {}
 
     def generate_mock_data(self, limit):
