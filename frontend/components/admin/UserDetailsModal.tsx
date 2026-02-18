@@ -72,6 +72,33 @@ export function UserDetailsModal({ user, onClose, onUpdate, adminUid }: UserDeta
         handleAction("Extended Trial", `/admin/users/${user.id}/extend-trial`, { days });
     };
 
+    const deleteAccount = async () => {
+        if (!confirm("Are you sure you want to PERMANENTLY delete this user? This action cannot be undone.")) return;
+
+        setIsLoading(true);
+        try {
+            const res = await fetch(`${apiUrl}/admin/users/${user.id}`, {
+                method: 'DELETE',
+                headers
+            });
+
+            if (res.ok) {
+                setMessage("User deleted successfully.");
+                setTimeout(() => {
+                    onClose();
+                    onUpdate();
+                }, 1500);
+            } else {
+                const err = await res.json();
+                setMessage(`Error: ${err.detail}`);
+                setIsLoading(false);
+            }
+        } catch (e) {
+            setMessage("Network error occurred.");
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="bg-[#111] border border-[#333] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative animate-fade-in shadow-2xl">
@@ -172,10 +199,11 @@ export function UserDetailsModal({ user, onClose, onUpdate, adminUid }: UserDeta
                                 Ban User (Coming Soon)
                             </button>
                             <button
-                                disabled={true}
-                                className="px-4 py-2 bg-red-900/10 border border-red-900/30 text-red-700 rounded text-xs font-bold cursor-not-allowed"
+                                onClick={deleteAccount}
+                                disabled={isLoading}
+                                className="px-4 py-2 bg-red-900/10 hover:bg-red-900/30 border border-red-900/30 hover:border-red-900/60 text-red-700 hover:text-red-500 rounded text-xs font-bold transition-colors"
                             >
-                                Delete Account (Coming Soon)
+                                Delete Account
                             </button>
                         </div>
                     </div>
