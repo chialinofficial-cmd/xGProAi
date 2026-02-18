@@ -1,53 +1,70 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [authorized, setAuthorized] = useState(false);
     const [checking, setChecking] = useState(true);
 
     useEffect(() => {
-        if (!user) {
-            // Wait for auth to initialize or redirect if definitely not logged in
-            // For now, just wait. AuthContext handles initial load.
+        // Skip check on login page itself
+        if (pathname === '/admin/login') {
+            setChecking(false);
+            setAuthorized(true); // Allow rendering the login page
             return;
         }
 
         const verifyAdmin = async () => {
+            const token = localStorage.getItem('admin_token');
+
+            if (!token) {
+                router.push('/admin/login');
+                setChecking(false);
+                return;
+            }
+
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                // Try to hit an admin endpoint to verify access
+                // Use token to hit a protected admin endpoint
                 const res = await fetch(`${apiUrl}/admin/stats`, {
-                    headers: { 'X-User-ID': user.uid }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (res.ok) {
                     setAuthorized(true);
                 } else {
-                    router.push('/dashboard'); // Kick back to normal dashboard
+                    localStorage.removeItem('admin_token');
+                    router.push('/admin/login');
                 }
             } catch (error) {
                 console.error("Admin verification failed", error);
-                router.push('/dashboard');
+                router.push('/admin/login');
             } finally {
                 setChecking(false);
             }
         };
 
         verifyAdmin();
-    }, [user, router]);
+    }, [router, pathname]);
 
     if (checking) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-gold font-bold animate-pulse">Verifying Admin Access...</div>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin"></div>
+                    <div className="text-gold font-bold text-sm tracking-widest uppercase">Initializing Security Protocol</div>
+                </div>
             </div>
         );
+    }
+
+    // Render children directly if on login page, otherwise wrap in dashboard
+    if (pathname === '/admin/login') {
+        return <>{children}</>;
     }
 
     if (!authorized) return null;
@@ -73,16 +90,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                             Overview
                         </Link>
-                        <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/5">
+                        {/* <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/5">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                             User Management
-                        </Link>
+                        </Link> */}
                     </nav>
 
-                    <div className="p-4 border-t border-white/10">
-                        <Link href="/dashboard" className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors">
-                            &larr; Back to App
-                        </Link>
+                    <div className="p-4 border-t border-white/10 space-y-4">
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem('admin_token');
+                                router.push('/admin/login');
+                            }}
+                            className="flex items-center gap-2 text-xs text-red-400 hover:text-red-300 transition-colors w-full"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            Sign Out
+                        </button>
                     </div>
                 </aside>
 

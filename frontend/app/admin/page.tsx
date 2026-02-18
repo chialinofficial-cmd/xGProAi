@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext';
 import { AdminAnalytics } from '../../components/admin/AdminAnalytics';
 import { UserTable } from '../../components/admin/UserTable';
 import { AIHealth } from '../../components/admin/AIHealth';
 
 export default function AdminOverview() {
-    const { user } = useAuth();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [usageData, setUsageData] = useState<any[]>([]);
@@ -16,12 +15,13 @@ export default function AdminOverview() {
     const [aiStats, setAiStats] = useState<any>(null);
 
     useEffect(() => {
-        if (!user) return;
-
         const fetchAdminData = async () => {
+            const token = localStorage.getItem('admin_token');
+            if (!token) return;
+
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const headers = { 'X-User-ID': user.uid };
+                const headers = { 'Authorization': `Bearer ${token}` };
 
                 // Parallel Fetching
                 const [statsRes, usageRes, assetRes, financeRes, aiRes] = await Promise.all([
@@ -49,7 +49,7 @@ export default function AdminOverview() {
         };
 
         fetchAdminData();
-    }, [user]);
+    }, []);
 
     if (loading) {
         return <div className="text-gold animate-pulse">Loading Admin Intelligence...</div>;

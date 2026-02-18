@@ -18,7 +18,7 @@ interface User {
 }
 
 export function UserTable() {
-    const { user } = useAuth();
+    // const { user } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -28,7 +28,9 @@ export function UserTable() {
     const LIMIT = 10;
 
     const fetchUsers = async () => {
-        if (!user) return;
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
         setLoading(true);
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -37,7 +39,7 @@ export function UserTable() {
             if (search) query += `&search=${search}`;
 
             const res = await fetch(`${apiUrl}/admin/users${query}`, {
-                headers: { 'X-User-ID': user.uid }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.ok) {
@@ -54,7 +56,7 @@ export function UserTable() {
     // Debounce search or just effect on dependency
     useEffect(() => {
         fetchUsers();
-    }, [user, page, search]); // Re-fetch on page/search change
+    }, [page, search]); // Re-fetch on page/search change
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value);
@@ -110,8 +112,8 @@ export function UserTable() {
                                     </td>
                                     <td className="py-3 px-4">
                                         <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold border ${u.plan_tier === 'pro' ? 'bg-gold/20 text-gold border-gold/30' :
-                                                u.plan_tier === 'trial' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                                                    'bg-gray-800 text-gray-400 border-gray-700'
+                                            u.plan_tier === 'trial' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                                'bg-gray-800 text-gray-400 border-gray-700'
                                             }`}>
                                             {u.plan_tier}
                                         </span>
@@ -153,10 +155,9 @@ export function UserTable() {
             </div>
 
             {/* Modal */}
-            {selectedUser && user && (
+            {selectedUser && (
                 <UserDetailsModal
                     user={selectedUser}
-                    adminUid={user.uid}
                     onClose={() => setSelectedUser(null)}
                     onUpdate={() => {
                         fetchUsers(); // Refresh list to show new tier/credits

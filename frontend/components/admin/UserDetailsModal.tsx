@@ -19,19 +19,20 @@ interface UserDetailsModalProps {
     user: User | null;
     onClose: () => void;
     onUpdate: () => void; // Trigger refresh
-    adminUid: string;
 }
 
-export function UserDetailsModal({ user, onClose, onUpdate, adminUid }: UserDetailsModalProps) {
+export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState("");
 
     if (!user) return null;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const token = localStorage.getItem('admin_token');
+
     const headers = {
         'Content-Type': 'application/json',
-        'X-User-ID': adminUid
+        'Authorization': `Bearer ${token}`
     };
 
     const handleAction = async (action: string, endpoint: string, body: any) => {

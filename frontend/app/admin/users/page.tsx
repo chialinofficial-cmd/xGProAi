@@ -1,21 +1,23 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
 
 export default function UserManagement() {
-    const { user } = useAuth();
+    // const { user } = useAuth();
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
 
     useEffect(() => {
-        if (!user) return;
         fetchUsers();
-    }, [user, search]); // Re-fetch on search
+    }, [search]); // Re-fetch on search
 
     const fetchUsers = async () => {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const url = search
@@ -23,7 +25,7 @@ export default function UserManagement() {
                 : `${apiUrl}/admin/users`;
 
             const res = await fetch(url, {
-                headers: { 'X-User-ID': user?.uid || '' }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.ok) {
@@ -41,13 +43,16 @@ export default function UserManagement() {
         const amount = prompt("Enter new credit balance:", currentCredits.toString());
         if (!amount) return;
 
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const res = await fetch(`${apiUrl}/admin/users/${userId}/credits`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-User-ID': user?.uid || ''
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ amount: parseInt(amount) })
             });
@@ -100,8 +105,8 @@ export default function UserManagement() {
                                     </td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 text-[10px] uppercase font-bold rounded ${u.plan_tier === 'pro' ? 'bg-gold text-black' :
-                                                u.plan_tier === 'active' ? 'bg-green-500/20 text-green-500' :
-                                                    'bg-gray-700 text-gray-300'
+                                            u.plan_tier === 'active' ? 'bg-green-500/20 text-green-500' :
+                                                'bg-gray-700 text-gray-300'
                                             }`}>
                                             {u.plan_tier}
                                         </span>
