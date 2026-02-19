@@ -38,6 +38,31 @@ body {
   overflow-x: hidden;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background); 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-primary); 
+}
+
+/* Custom Selection */
+::selection {
+  background: var(--gold-glow);
+  color: var(--gold-light);
+}
+
 /* Custom Utilities for Gold Effects */
 .text-gradient-gold {
   background: linear-gradient(to right, #D4AF37, #F4C430, #D4AF37);

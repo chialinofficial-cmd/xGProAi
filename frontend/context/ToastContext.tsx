@@ -41,10 +41,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
-                        className={`pointer-events-auto px-6 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full fade-in duration-300 flex items-center gap-3 min-w-[300px]
-                            ${toast.type === 'success' ? 'bg-green-500/10 border-green-500/50 text-green-400' :
-                                toast.type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-400' :
-                                    'bg-blue-500/10 border-blue-500/50 text-blue-400'}`}
+                        className={`pointer-events-auto px-6 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border backdrop-blur-xl animate-in slide-in-from-right-full fade-in duration-300 flex items-center gap-4 min-w-[320px]
+                            ${toast.type === 'success' ? 'bg-black/80 border-green-500/30 text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.1)]' :
+                                toast.type === 'error' ? 'bg-black/80 border-red-500/30 text-red-400 shadow-[0_0_15px_rgba(248,113,113,0.1)]' :
+                                    'bg-black/80 border-gold/30 text-gold shadow-[0_0_15px_rgba(212,175,55,0.1)]'}`}
                     >
                         <span className="text-xl">
                             {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠' : 'ℹ'}
