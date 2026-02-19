@@ -114,7 +114,7 @@ export default function UploadPage() {
 
             // ... (fetch) ...
             const userEmail = user.email || user.providerData?.[0]?.email || '';
-            console.log("Debug: Uploading for", user.uid, "Email:", userEmail);
+
 
             const response = await fetch(`${apiUrl}/analyze`, {
                 method: 'POST',
