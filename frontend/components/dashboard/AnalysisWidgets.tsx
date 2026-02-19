@@ -38,7 +38,7 @@ export const SentimentWidget = ({ data }: { data?: SentimentContext }) => {
 
     // Normalize score -100 to 100 -> 0 to 100% for gauge
     const percentage = ((data.score + 100) / 200) * 100;
-    
+
     let colorClass = "bg-gray-500";
     if (data.score > 25) colorClass = "bg-green-500";
     if (data.score < -25) colorClass = "bg-red-500";
@@ -48,14 +48,14 @@ export const SentimentWidget = ({ data }: { data?: SentimentContext }) => {
             <div className="flex flex-col items-center">
                 {/* Gauge Visual */}
                 <div className="w-full h-3 bg-gray-700 rounded-full mb-2 relative overflow-hidden">
-                    <div 
-                        className={`h-full ${colorClass} transition-all duration-1000`} 
+                    <div
+                        className={`h-full ${colorClass} transition-all duration-1000`}
                         style={{ width: `${percentage}%` }}
                     />
                     {/* Center Marker */}
                     <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white opacity-50"></div>
                 </div>
-                
+
                 <div className="flex justify-between w-full text-[10px] text-gray-500 font-mono mb-2">
                     <span>BEARISH</span>
                     <span>NEUTRAL</span>
@@ -81,7 +81,7 @@ export const QuantWidget = ({ data }: { data?: QuantContext }) => {
 
     const isRsiHigh = data.rsi > 70;
     const isRsiLow = data.rsi < 30;
-    
+
     return (
         <CardBase title="Quant Stats" icon={<svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}>
             <div className="space-y-4">
@@ -98,7 +98,7 @@ export const QuantWidget = ({ data }: { data?: QuantContext }) => {
                     <span className="text-gray-400 text-xs">RSI (14)</span>
                     <div className="text-right">
                         <span className={`text-sm font-bold block ${isRsiHigh || isRsiLow ? 'text-yellow-400' : 'text-white'}`}>
-                            {data.rsi.toFixed(1)}
+                            {typeof data.rsi === 'number' ? data.rsi.toFixed(1) : '-'}
                         </span>
                         {(isRsiHigh || isRsiLow) && (
                             <span className="text-[10px] text-yellow-500 font-mono">
@@ -112,7 +112,7 @@ export const QuantWidget = ({ data }: { data?: QuantContext }) => {
                 <div className="flex justify-between items-center bg-black/20 p-2 rounded">
                     <span className="text-gray-400 text-xs">Volatility</span>
                     {data.volatility_alert ? (
-                         <span className="text-xs font-bold bg-red-500/20 text-red-400 px-2 py-1 rounded animate-pulse">
+                        <span className="text-xs font-bold bg-red-500/20 text-red-400 px-2 py-1 rounded animate-pulse">
                             HIGH ALERT
                         </span>
                     ) : (
@@ -131,7 +131,7 @@ export const SMCWidget = ({ data }: { data?: SMCContext }) => {
     return (
         <CardBase title="Smart Money Concepts" icon={<svg className="w-4 h-4 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}>
             <ul className="space-y-3 text-sm">
-                 <li className="flex gap-3 items-start">
+                <li className="flex gap-3 items-start">
                     <span className="text-gray-500 min-w-[30px] text-[10px] uppercase mt-0.5">MSS</span>
                     <span className={`${data.market_structure_break ? 'text-white' : 'text-gray-600 italic'}`}>
                         {data.market_structure_break || "None Detected"}
