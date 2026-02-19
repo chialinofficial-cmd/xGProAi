@@ -547,7 +547,7 @@ via xGProAi
                                             </div>
                                             <div>
                                                 <p className="text-gray-400 text-xs mb-1">Risk Amount</p>
-                                                <p className="text-xl font-bold text-red-300">-${analysis.risk_management.risk_amount_usd.toFixed(2)}</p>
+                                                <p className="text-xl font-bold text-red-300">-${(analysis.risk_management.risk_amount_usd || 0).toFixed(2)}</p>
                                                 <p className="text-gray-500 text-xs">If Stopped Out</p>
                                             </div>
                                         </div>
@@ -693,9 +693,9 @@ via xGProAi
                                                             <p className="text-gray-400 text-xs uppercase mb-1">RSI (14)</p>
                                                             <div className="flex items-end gap-2">
                                                                 <span className={`text-2xl font-bold ${indicators.rsi > 70 || indicators.rsi < 30 ? 'text-yellow-400' : 'text-white'}`}>
-                                                                    {indicators.rsi ? indicators.rsi.toFixed(1) : '-'}
+                                                                    {typeof indicators.rsi === 'number' ? indicators.rsi.toFixed(1) : '-'}
                                                                 </span>
-                                                                <span className="text-xs text-gray-500 mb-1">{h1.momentum}</span>
+                                                                <span className="text-xs text-gray-500 mb-1">{h1.momentum || '-'}</span>
                                                             </div>
                                                         </div>
                                                         <div className="bg-black/20 p-4 rounded-lg border border-white/5">
@@ -705,15 +705,15 @@ via xGProAi
                                                                     {macd.sentiment || '-'}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-[10px] text-gray-600 mt-1">Hist: {macd.hist ? macd.hist.toFixed(3) : '-'}</p>
+                                                            <p className="text-[10px] text-gray-600 mt-1">Hist: {typeof macd.hist === 'number' ? macd.hist.toFixed(3) : '-'}</p>
                                                         </div>
                                                         <div className="bg-black/20 p-4 rounded-lg border border-white/5 col-span-2">
                                                             <p className="text-gray-400 text-xs uppercase mb-1">Bollinger Bands (20, 2)</p>
                                                             <div className="flex justify-between items-center">
                                                                 <span className="text-white font-bold">{bb.position || 'Inside'}</span>
                                                                 <div className="text-right">
-                                                                    <p className="text-[10px] text-gray-500">Upper: {bb.upper ? bb.upper.toFixed(2) : '-'}</p>
-                                                                    <p className="text-[10px] text-gray-500">Lower: {bb.lower ? bb.lower.toFixed(2) : '-'}</p>
+                                                                    <p className="text-[10px] text-gray-500">Upper: {typeof bb.upper === 'number' ? bb.upper.toFixed(2) : '-'}</p>
+                                                                    <p className="text-[10px] text-gray-500">Lower: {typeof bb.lower === 'number' ? bb.lower.toFixed(2) : '-'}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
