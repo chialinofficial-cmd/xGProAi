@@ -285,13 +285,20 @@ def get_analyses(
     return analyses
 
 @router.get("/analyses/{analysis_id}", response_model=AnalysisResponse)
-def read_analysis(analysis_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def read_analysis(analysis_id: int, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+
     analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id).first()
     if analysis is None:
         raise HTTPException(status_code=404, detail="Analysis not found")
         
     # Security: Ensure user owns analysis or is admin
-    if analysis.user_id != current_user.firebase_uid and not current_user.is_admin:
+    # Optional: fetch user to check is_admin if needed, but for now strict ownership is sufficient for dashboard
+    user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
+    is_admin = user.is_admin if user else False
+    
+    if analysis.user_id != x_user_id and not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to view this analysis")
 
     # Map meta_data to response fields

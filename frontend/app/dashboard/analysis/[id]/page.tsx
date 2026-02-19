@@ -57,11 +57,14 @@ interface Analysis {
     smc_context?: SMCContext;
 }
 
+import { useAuth } from '../../../context/AuthContext';
+
 export default function AnalysisPage() {
     const params = useParams();
     const router = useRouter();
     const id = params?.id as string;
     const { showToast } = useToast();
+    const { user } = useAuth(); // Get user from context
 
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [loading, setLoading] = useState(true);
@@ -69,8 +72,8 @@ export default function AnalysisPage() {
     const [auditLog, setAuditLog] = useState<string[]>([]); // For "Copy" feedback
 
     useEffect(() => {
-        if (!id) {
-            setLoading(false);
+        if (!id || !user) { // Wait for user to be available
+            if (!id) setLoading(false);
             return;
         }
 
@@ -81,12 +84,16 @@ export default function AnalysisPage() {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
             try {
                 const res = await fetch(`${apiUrl}/analyses/${id}`, {
+                    headers: {
+                        'X-User-ID': user.uid // Send User ID
+                    },
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
 
                 if (!res.ok) {
-                    throw new Error("Analysis not found");
+                    const errorText = await res.text();
+                    throw new Error(errorText || "Analysis not found");
                 }
                 const data = await res.json();
                 setAnalysis(data);
@@ -98,7 +105,7 @@ export default function AnalysisPage() {
         };
 
         fetchAnalysis();
-    }, [id]);
+    }, [id, user]);
 
     if (loading) {
         return (
