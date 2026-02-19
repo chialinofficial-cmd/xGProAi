@@ -427,90 +427,50 @@ via xGProAi
                             <div className="p-6 h-full flex flex-col animate-fade-in overflow-y-auto max-h-[700px]">
                                 <h3 className="text-xl font-bold text-white mb-6">Trade Execution Plan</h3>
 
-                                {/* Visual Range Bar (Premium Redesign) */}
-                                <div className="mb-12 relative mt-12 px-4">
-                                    {(() => {
-                                        // Calculate range min/max to normalize positions with padding
-                                        const vals = [slPrice, currentPrice, tp1Price, tp2Price].map(v => Number(v) || 0).filter(v => v > 0);
-                                        const minVal = Math.min(...vals);
-                                        const maxVal = Math.max(...vals);
-                                        const range = maxVal - minVal || 1;
+                                {/* PRICE LEVELS GRID (Redesigned) */}
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                                    {/* Entry Card */}
+                                    <div className="glass-panel p-4 rounded-xl border-l-4 border-blue-500 relative overflow-hidden group">
+                                        <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <svg className="w-16 h-16 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                                        </div>
+                                        <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Entry Point</p>
+                                        <p className="text-2xl font-bold text-white font-mono">{currentPrice}</p>
+                                        <div className="text-[10px] text-blue-400 mt-1 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                            Active Zone
+                                        </div>
+                                    </div>
 
-                                        const getPos = (val: number) => {
-                                            const p = ((val - minVal) / range) * 100;
-                                            return Math.min(Math.max(p, 0), 100);
-                                        };
+                                    {/* TP1 Card */}
+                                    <div className="glass-panel p-4 rounded-xl border-l-4 border-green-500 relative overflow-hidden group">
+                                        <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <svg className="w-16 h-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </div>
+                                        <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Target 1 (TP1)</p>
+                                        <p className="text-2xl font-bold text-green-400 font-mono">{tp1Price}</p>
+                                        <p className="text-[10px] text-gray-500 mt-1">First Take Profit</p>
+                                    </div>
 
-                                        return (
-                                            <div className="relative w-full h-2 bg-white/5 rounded-full">
-                                                {/* Gradient Progress Line */}
-                                                <div className="absolute top-0 left-0 h-full w-full rounded-full bg-gradient-to-r from-red-500/20 via-blue-500/20 to-green-500/20"></div>
+                                    {/* TP2 Card */}
+                                    <div className="glass-panel p-4 rounded-xl border-l-4 border-green-400 relative overflow-hidden group">
+                                        <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <svg className="w-16 h-16 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </div>
+                                        <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Target 2 (TP2)</p>
+                                        <p className="text-2xl font-bold text-green-300 font-mono">{tp2Price}</p>
+                                        <p className="text-[10px] text-gray-500 mt-1">Extended Target</p>
+                                    </div>
 
-                                                {/* Active Zone Highlights (Optional: Range fill from Entry to TP) */}
-                                                <div
-                                                    className="absolute top-0 h-full bg-gradient-to-r from-blue-500/40 to-green-500/40 blur-sm"
-                                                    style={{
-                                                        left: `${getPos(currentPrice)}%`,
-                                                        width: `${getPos(tp2Price) - getPos(currentPrice)}%`
-                                                    }}
-                                                ></div>
-
-                                                {/* STOP LOSS */}
-                                                <div
-                                                    className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center group cursor-help z-10"
-                                                    style={{ left: `${getPos(slPrice)}%` }}
-                                                >
-                                                    <div className="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)] ring-4 ring-black ring-opacity-50 group-hover:scale-150 transition-transform duration-300"></div>
-                                                    <div className="absolute -bottom-8 flex flex-col items-center opacity-80 group-hover:opacity-100 transition-opacity">
-                                                        <span className="text-red-400 text-[10px] font-bold uppercase tracking-widest">SL</span>
-                                                        <span className="text-white text-[10px] font-mono">{slPrice}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* ENTRY POINT */}
-                                                <div
-                                                    className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-20"
-                                                    style={{ left: `${getPos(currentPrice)}%` }}
-                                                >
-                                                    <div className="relative">
-                                                        <div className="absolute inset-0 bg-blue-500 blur-md opacity-40 animate-pulse"></div>
-                                                        <div className="bg-black border border-blue-500/50 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1.5 whitespace-nowrap">
-                                                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                                                            ENTRY
-                                                        </div>
-                                                    </div>
-                                                    <div className="absolute -top-7 text-white font-mono text-xs font-bold shadow-black drop-shadow-md">
-                                                        {currentPrice}
-                                                    </div>
-                                                </div>
-
-                                                {/* TP1 */}
-                                                <div
-                                                    className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center group z-10"
-                                                    style={{ left: `${getPos(tp1Price)}%` }}
-                                                >
-                                                    <div className="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)] ring-4 ring-black ring-opacity-50 group-hover:scale-150 transition-transform duration-300"></div>
-                                                    <div className="absolute -bottom-8 flex flex-col items-center opacity-80 group-hover:opacity-100 transition-opacity">
-                                                        <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">TP1</span>
-                                                        <span className="text-white text-[10px] font-mono">{tp1Price}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* TP2 */}
-                                                <div
-                                                    className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center group z-10"
-                                                    style={{ left: `${getPos(tp2Price)}%` }}
-                                                >
-                                                    <div className="w-3 h-3 bg-green-400 rounded-full shadow-[0_0_15px_rgba(74,222,128,0.5)] ring-4 ring-black ring-opacity-50 group-hover:scale-150 transition-transform duration-300"></div>
-                                                    <div className="absolute -bottom-8 flex flex-col items-center opacity-80 group-hover:opacity-100 transition-opacity">
-                                                        <span className="text-green-300 text-[10px] font-bold uppercase tracking-widest">TP2</span>
-                                                        <span className="text-white text-[10px] font-mono">{tp2Price}</span>
-                                                    </div>
-                                                </div>
-
-                                            </div>
-                                        );
-                                    })()}
+                                    {/* SL Card */}
+                                    <div className="glass-panel p-4 rounded-xl border-l-4 border-red-500 relative overflow-hidden group">
+                                        <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <svg className="w-16 h-16 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                        </div>
+                                        <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Stop Loss (SL)</p>
+                                        <p className="text-2xl font-bold text-red-400 font-mono">{slPrice}</p>
+                                        <p className="text-[10px] text-gray-500 mt-1">Invalidation Level</p>
+                                    </div>
                                 </div>
 
                                 {/* GLASS BOX WIDGETS (New) */}
