@@ -606,9 +606,9 @@ export default function Home() {
             <div className="relative h-[400px] rounded-2xl overflow-hidden border border-border-subtle shadow-2xl shadow-gold/5 group">
               <div className="absolute inset-0 bg-gold/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
               <img
-                src="/trading_team_working.png"
-                alt="xGProAi Team - Kamakat Holdings"
-                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                src="/kamakat_logo.jpg"
+                alt="Kamakat Holdings Logo"
+                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-700 p-8"
               />
             </div>
           </div>
