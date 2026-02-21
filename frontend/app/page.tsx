@@ -593,24 +593,49 @@ export default function Home() {
               <div className="inline-block px-3 py-1 rounded-full border border-gold/30 bg-gold/5 text-gold text-xs font-semibold tracking-wide uppercase mb-2">
                 Who We Are
               </div>
-              <h3 className="text-3xl font-bold text-white">From Accra to the Global Stage</h3>
+              <h3 className="text-3xl font-bold text-white leading-tight">
+                Built for Traders.<br />
+                <span className="text-gradient-gold">Powered by Intelligence.</span>
+              </h3>
               <p className="text-gray-400 leading-relaxed">
-                xGProAi is the flagship financial technology product of <strong className="text-white">Kamakat Holdings</strong>, a forward-thinking investment group based in Accra, Ghana.
+                xGProAi was built out of a single frustration every serious trader knows too well —
+                <strong className="text-white"> spending hours analyzing charts, only to miss the move or enter at the wrong level.</strong> We
+                knew there had to be a better way.
               </p>
               <p className="text-gray-400 leading-relaxed">
-                Founded by <strong className="text-white">Michael Tintant Chialin</strong>, our team combines deep expertise in Trading, strategic investment, and artificial intelligence. We are proud to be an African-led innovation hub, building world-class tools that compete on the global stage.
+                So we built one. Our team of traders, engineers, and AI researchers came together to
+                create a platform that thinks like an institutional desk — scanning chart structure,
+                identifying liquidity, and surfacing high-confidence signals in seconds, not hours.
               </p>
-              <p className="text-gray-400 leading-relaxed italic border-l-2 border-gold pl-4">
-                "We don't want to trade for you. We want to make you a better trader. Our AI acts as your second set of eyes, confirming your bias or saving you from a bad entry."
+              <p className="text-gray-400 leading-relaxed italic border-l-2 border-gold pl-4 text-sm">
+                "We don't want to trade for you. We want to make you a better trader.
+                Our AI acts as your second set of eyes — confirming your bias or saving you from a bad entry."
               </p>
+              {/* Trust Badges */}
+              <div className="flex flex-wrap gap-4 pt-2">
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  Trusted by traders in 30+ countries
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <span className="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
+                  10,000+ analyses processed
+                </div>
+              </div>
             </div>
+            {/* Dashboard Preview */}
             <div className="relative h-[400px] rounded-2xl overflow-hidden border border-border-subtle shadow-2xl shadow-gold/5 group">
-              <div className="absolute inset-0 bg-gold/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10 pointer-events-none" />
               <img
-                src="/kamakat_logo.jpg"
-                alt="Kamakat Holdings Logo"
-                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-700 p-8"
+                src="/dashboard_analysis_preview.png"
+                alt="xGPro AI Dashboard"
+                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
               />
+              <div className="absolute bottom-4 left-4 z-20">
+                <div className="px-3 py-1.5 bg-black/70 backdrop-blur-sm border border-gold/30 rounded-lg text-xs text-gold font-bold">
+                  ✦ Live AI Analysis Dashboard
+                </div>
+              </div>
             </div>
           </div>
 
