@@ -49,3 +49,4 @@ pandas_ta
 numpy
 Pillow
 yfinance
+resend
