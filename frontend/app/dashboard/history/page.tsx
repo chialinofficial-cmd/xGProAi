@@ -152,7 +152,7 @@ export default function HistoryPage() {
                                             </div>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <Link href={`/dashboard/analysis/${item.id}`} className="text-gold hover:text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Link href={`/dashboard/analysis/${item.id}`} className="text-gold hover:text-white text-sm font-bold transition-colors">
                                                 View Details &rarr;
                                             </Link>
                                         </td>

@@ -16,7 +16,7 @@ export default function DashboardHome() {
         total_analyses: 0,
         charts_analyzed: 0,
         ai_responses: 0,
-        credits_remaining: 10,
+        credits_remaining: 3,
         plan_tier: 'trial'
     });
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -32,7 +32,10 @@ export default function DashboardHome() {
 
                 // Fetch Stats
                 const statsRes = await fetch(`${apiUrl}/stats`, {
-                    headers: { 'X-User-ID': user.uid }
+                    headers: {
+                        'X-User-ID': user.uid,
+                        'X-User-Email': user.email || ''
+                    }
                 });
                 if (statsRes.ok) {
                     const statsData = await statsRes.json();
@@ -90,7 +93,7 @@ export default function DashboardHome() {
             <div className="rounded-2xl overflow-hidden relative bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-white/10 p-8 shadow-2xl">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
                 <div className="relative z-10">
-                    <h1 className="text-3xl font-bold text-white mb-2">Welcome back, {user?.displayName || 'Trader'}</h1>
+                    <h1 className="text-3xl font-bold text-white mb-2">Welcome back, {user?.displayName || user?.email?.split('@')[0] || 'Trader'}</h1>
                     <p className="text-blue-200/80 max-w-xl">Ready to find your next winning trade? Upload a chart to get instant AI-powered institutional analysis.</p>
 
                     <div className="mt-6 flex gap-3">
@@ -143,7 +146,7 @@ export default function DashboardHome() {
                     </div>
                 </div>
 
-                {/* Card 4 */}
+                {/* Card 4 — Credits */}
                 <div className="glass-card p-6 rounded-xl relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-4">
                         <div>
@@ -153,6 +156,9 @@ export default function DashboardHome() {
                             </h3>
                             {stats.plan_tier === 'trial' && (
                                 <p className="text-[10px] text-yellow-500 font-mono mt-1">Trial Plan</p>
+                            )}
+                            {(stats.plan_tier !== 'pro' && stats.credits_remaining <= 1) && (
+                                <a href="/#pricing" className="text-[10px] text-gold font-bold mt-1 block hover:underline">Upgrade →</a>
                             )}
                         </div>
                         <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500 group-hover:bg-yellow-500 group-hover:text-white transition-colors">

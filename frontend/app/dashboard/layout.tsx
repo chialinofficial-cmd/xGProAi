@@ -14,7 +14,7 @@ export default function DashboardLayout({
 }) {
     const { user, logOut } = useAuth();
     const { handlePayment } = usePayment();
-    const [credits, setCredits] = useState(0);
+    const [credits, setCredits] = useState(3);
 
     // Fetch credits whenever the layout mounts or user changes
     useEffect(() => {

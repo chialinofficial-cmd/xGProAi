@@ -25,7 +25,10 @@ export default function ProfilePage() {
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 const res = await fetch(`${apiUrl}/stats`, {
-                    headers: { 'X-User-ID': user.uid }
+                    headers: {
+                        'X-User-ID': user.uid,
+                        'X-User-Email': user.email || ''
+                    }
                 });
 
                 if (res.ok) {
@@ -96,7 +99,10 @@ export default function ProfilePage() {
                         <div>
                             <h2 className="text-xl font-bold text-white">{user?.displayName || 'User'}</h2>
                             <p className="text-gray-400 text-sm">{user?.email}</p>
-                            <span className={`inline-block mt-2 px-2 py-0.5 text-[10px] font-bold uppercase rounded ${stats?.plan_tier === 'pro' ? 'bg-gold text-black' : 'bg-gray-700 text-gray-300'}`}>
+                            <span className={`inline-block mt-2 px-2 py-0.5 text-[10px] font-bold uppercase rounded ${stats?.plan_tier === 'pro' ? 'bg-gold text-black' :
+                                    stats?.plan_tier === 'trial' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                                        'bg-gray-700 text-gray-300'
+                                }`}>
                                 {stats?.plan_tier} Plan
                             </span>
                         </div>
