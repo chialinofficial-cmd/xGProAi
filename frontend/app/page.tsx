@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './context/AuthContext';
 import ParticlesBackground from '../components/ParticlesBackground';
+import ContactForm from '../components/ContactForm';
 
 export default function Home() {
   const { user } = useAuth();
@@ -675,38 +676,7 @@ export default function Home() {
           </div>
 
           <div className="bg-background border border-border-subtle rounded-2xl p-8 shadow-2xl">
-            <form className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-400 mb-2">Your Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  className="w-full bg-surface-card border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="Enter your name"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-2">Your Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  className="w-full bg-surface-card border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="Enter your email"
-                />
-              </div>
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-400 mb-2">Your Message</label>
-                <textarea
-                  id="message"
-                  rows={4}
-                  className="w-full bg-surface-card border border-border-subtle rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                  placeholder="How can we help you?"
-                />
-              </div>
-              <button className="w-full bg-gold hover:bg-gold-light text-black font-bold py-3 rounded-lg transition-colors shadow-lg shadow-gold/20">
-                Send Message
-              </button>
-            </form>
+            <ContactForm />
           </div>
         </div>
       </section>

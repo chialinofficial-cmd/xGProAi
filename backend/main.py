@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import Routers
-from routers import auth, users, admin, analysis, admin_auth
+from routers import auth, users, admin, analysis, admin_auth, contact
 
 # Import Database Init
 from database_init import init_db
@@ -50,6 +50,7 @@ app.include_router(users.router)
 app.include_router(admin.router)
 app.include_router(analysis.router)
 app.include_router(admin_auth.router)
+app.include_router(contact.router)
 
 @app.get("/")
 def read_root():
