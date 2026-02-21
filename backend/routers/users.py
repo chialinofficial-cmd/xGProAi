@@ -136,10 +136,13 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 @router.get("/paystack/verify/{reference}")
-def verify_payment(reference: str, db: Session = Depends(get_db)):
+def verify_payment(reference: str, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     paystack = PaystackService()
     result = paystack.verify_transaction(reference)
-    
+
     if not result or not result.get('status'):
         raise HTTPException(status_code=400, detail="Verification failed")
         
@@ -154,6 +157,10 @@ def verify_payment(reference: str, db: Session = Depends(get_db)):
         amount_paid = data.get('amount') / 100 # Convert back to GHS
         
         if user_id and plan_tier:
+            # Security: verify the requesting user matches the payment metadata
+            if user_id != x_user_id:
+                raise HTTPException(status_code=403, detail="Payment does not belong to the authenticated user")
+
             user = db.query(models.User).filter(models.User.firebase_uid == user_id).first()
             if user:
                 user.plan_tier = plan_tier

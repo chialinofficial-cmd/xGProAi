@@ -14,23 +14,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Admin"])
 
-@router.post("/admin/promote")
-def promote_to_admin(email: str, secret: str, uid: str = None, db: Session = Depends(get_db)):
-    # Backdoor for initial setup only
-    if secret != "super_secret_setup_key_123":
-        raise HTTPException(status_code=403, detail="Invalid secret")
-    
-    user = db.query(models.User).filter(models.User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user.is_admin = True
-    if uid:
-        user.firebase_uid = uid
-        logger.info(f"Linked UID {uid} to user {email}")
-        
-    db.commit()
-    return {"status": "success", "message": f"{email} is now an Admin (UID Linked)"}
+# NOTE: Admin promotion is done directly via DB or via the admin panel only.
+# The /admin/promote backdoor has been removed for security.
 
 @router.get("/admin/stats")
 def get_admin_stats(db: Session = Depends(get_db), _: bool = Depends(verify_admin)):

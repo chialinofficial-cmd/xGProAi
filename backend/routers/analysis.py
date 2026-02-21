@@ -6,8 +6,8 @@ import shutil
 import os
 import json
 import logging
+import uuid
 
-import models
 import models
 from dependencies import get_db
 from auth import get_current_user
@@ -22,14 +22,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Analysis"])
 
-@router.post("/upload")
-def upload_chart(file: UploadFile = File(...)):
-    # Save file locally
-    file_location = f"uploads/{file.filename}"
-    os.makedirs("uploads", exist_ok=True)
-    with open(file_location, "wb+") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"filename": file.filename, "location": file_location}
+# /upload endpoint removed — use /analyze directly.
 
 @router.post("/analyze", response_model=AnalysisResponse)
 async def analyze_chart(
@@ -147,17 +140,33 @@ async def analyze_chart(
         if not allow_analysis:
              raise HTTPException(status_code=403, detail="Access denied.")
 
-        # 1. Save File
-        filename = file.filename
+        # 1. Save File — validate type, size, and sanitize filename
+        ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/jpg"}
+        MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+        if file.content_type not in ALLOWED_TYPES:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only PNG, JPG, and WEBP images are accepted.")
+
+        # Read file content once, check size
+        file_bytes = await file.read()
+        if len(file_bytes) > MAX_SIZE_BYTES:
+            raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 10 MB.")
+
+        # Sanitize filename — use UUID to prevent path traversal
+        ext = os.path.splitext(os.path.basename(file.filename or "chart"))[1].lower()
+        if ext not in (".png", ".jpg", ".jpeg", ".webp"):
+            ext = ".png"
+        safe_filename = f"{uuid.uuid4().hex}{ext}"
+
         upload_dir = "/tmp" if os.path.exists("/tmp") else "uploads"
         os.makedirs(upload_dir, exist_ok=True)
-        
-        physical_path = os.path.join(upload_dir, filename)
-        db_image_path = f"uploads/{filename}"
-        
-        with open(physical_path, "wb+") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        
+
+        physical_path = os.path.join(upload_dir, safe_filename)
+        db_image_path = f"uploads/{safe_filename}"
+
+        with open(physical_path, "wb") as buffer:
+            buffer.write(file_bytes)
+
         file_location = physical_path
 
         # 2. AI Analysis & Tri-Model Orchestration
@@ -310,11 +319,23 @@ def read_analysis(analysis_id: int, x_user_id: str = Header(None), db: Session =
     return response
 
 @router.patch("/analyses/{analysis_id}/result", response_model=AnalysisResponse)
-def update_analysis_result(analysis_id: int, result_data: AnalysisUpdateResult, db: Session = Depends(get_db)):
+def update_analysis_result(
+    analysis_id: int,
+    result_data: AnalysisUpdateResult,
+    x_user_id: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id).first()
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
-    
+
+    # Ownership check — only the owner may update their own analysis result
+    if analysis.user_id != x_user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this analysis")
+
     analysis.result = result_data.result
     db.commit()
     db.refresh(analysis)

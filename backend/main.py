@@ -1,6 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 from dotenv import load_dotenv
@@ -23,7 +26,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+
 app = FastAPI(title="xGProAi Backend", version="2.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS Middleware
 app.add_middleware(
@@ -74,14 +82,18 @@ def force_migration():
 # Custom Image Serving
 @app.get("/uploads/{filename}")
 async def get_uploaded_file(filename: str):
+    # Sanitize filename to prevent path traversal
+    safe_name = os.path.basename(filename)
+
     # Check /tmp first for production (Render/Vercel)
-    tmp_path = os.path.join("/tmp", filename)
+    tmp_path = os.path.join("/tmp", safe_name)
     if os.path.exists(tmp_path):
         return FileResponse(tmp_path)
     
     # Fallback to local uploads/ directory
-    local_path = os.path.join("uploads", filename)
+    local_path = os.path.join("uploads", safe_name)
     if os.path.exists(local_path):
         return FileResponse(local_path)
         
     raise HTTPException(status_code=404, detail="File not found")
+

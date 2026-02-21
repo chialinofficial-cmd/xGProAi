@@ -5,8 +5,11 @@ from passlib.context import CryptContext
 
 import os
 
-# Secret key for JWT
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkeyformvp_fallback_dev_only")
+# Secret key for JWT — must be set in .env, no fallback allowed
+_JWT_SECRET = os.getenv("JWT_SECRET_KEY")
+if not _JWT_SECRET:
+    raise RuntimeError("FATAL: JWT_SECRET_KEY environment variable is not set. Refusing to start.")
+SECRET_KEY = _JWT_SECRET
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
