@@ -7,7 +7,7 @@ import models
 from dependencies import get_db
 from schemas import UserCreate, UserResponse, Token, ProfileUpdate
 from auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-from main import limiter
+from limiter import limiter
 
 router = APIRouter(tags=["Authentication"])
 
