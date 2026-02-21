@@ -25,7 +25,8 @@ export default function DashboardLayout({
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 const res = await fetch(`${apiUrl}/stats`, {
                     headers: {
-                        'X-User-ID': user.uid
+                        'X-User-ID': user.uid,
+                        'X-User-Email': user.email || ''
                     }
                 });
                 if (res.ok) {
@@ -56,7 +57,7 @@ export default function DashboardLayout({
             {isPricingOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
                     <div className="bg-[#0f1115] border border-gray-800 rounded-2xl p-6 max-w-5xl w-full text-center relative shadow-2xl my-8">
-                        <button 
+                        <button
                             onClick={() => setIsPricingOpen(false)}
                             className="absolute top-4 right-4 text-gray-500 hover:text-white z-10"
                         >
@@ -67,7 +68,7 @@ export default function DashboardLayout({
                         <p className="text-gray-400 mb-8">Choose the perfect plan for your trading journey</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            
+
                             {/* Starter Plan */}
                             <div className="bg-surface-card border border-gray-800 rounded-xl p-6 flex flex-col hover:border-gray-600 transition-all">
                                 <h4 className="text-xl font-bold text-white mb-1">Starter</h4>
@@ -220,7 +221,7 @@ export default function DashboardLayout({
                     </button>
                 </div>
             </aside>
-            
+
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}

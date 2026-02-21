@@ -16,7 +16,8 @@ router = APIRouter(tags=["Users"])
 @router.get("/stats", response_model=StatsResponse)
 def get_stats(
     db: Session = Depends(get_db),
-    x_user_id: str = Header(None)
+    x_user_id: str = Header(None),
+    x_user_email: str = Header(None)
 ):
     try:
         if not x_user_id:
@@ -30,14 +31,31 @@ def get_stats(
 
         # Fetch User Freshly
         user = db.query(models.User).filter(models.User.firebase_uid == x_user_id).first()
-        tier = user.plan_tier if user else "free"
-        credits = user.credits_balance if user else 0
-        
+
+        # --- Eagerly provision trial user on first dashboard visit ---
+        if not user and x_user_id:
+            trial_expiry = datetime.utcnow() + timedelta(days=3)
+            user = models.User(
+                firebase_uid=x_user_id,
+                email=x_user_email,
+                full_name=x_user_email.split('@')[0] if x_user_email else "Trader",
+                plan_tier="trial",
+                credits_balance=3,
+                trial_ends_at=trial_expiry
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            logger.info(f"Provisioned new trial user on stats call: {x_user_id}")
+
+        tier = user.plan_tier if user else "trial"
+        credits = user.credits_balance if user else 3
+
         count = db.query(models.Analysis).filter(models.Analysis.user_id == x_user_id).count()
 
         return {
             "total_analyses": count,
-            "charts_analyzed": count, 
+            "charts_analyzed": count,
             "ai_responses": count,
             "credits_remaining": credits,
             "plan_tier": tier,
@@ -45,18 +63,16 @@ def get_stats(
             "mobile": user.mobile if user else None,
             "country": user.country if user else None,
             "gender": user.gender if user else None,
-            "country": user.country if user else None,
-            "gender": user.gender if user else None,
             "age_group": user.age_group if user else None,
             "is_admin": user.is_admin if user else False
         }
     except Exception as e:
         logger.error(f"Stats Error: {e}")
-        # Return friendly error structure
         return {
-            "total_analyses": 0, "charts_analyzed": 0, "ai_responses": 0, 
-            "credits_remaining": 0, "plan_tier": "error"
+            "total_analyses": 0, "charts_analyzed": 0, "ai_responses": 0,
+            "credits_remaining": 3, "plan_tier": "trial"
         }
+
 
 # --- Payment Integration (Paystack) ---
 
